@@ -9,7 +9,7 @@
     rgba(0, 0, 0, 0.7),
     rgba(0, 0, 0, 0.9)
   ),
-  url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+  url('../assets/gym3.jpg') center/cover no-repeat;
   padding: 80px 0;
   overflow: hidden;
 }

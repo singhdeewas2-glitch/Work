@@ -1,27 +1,33 @@
 import React, { useEffect, useRef } from 'react';
 import './Transformations.css';
+import before1 from '../assets/gym 5.webp';
+import after1 from '../assets/gym6.avif';
+import before2 from '../assets/gym8.avif';
+import after2 from '../assets/gym13.avif';
+import before3 from '../assets/gym15.jpg';
+import after3 from '../assets/gym2.jpg';
 
 const transformationsData = [
   {
     id: 1,
     name: 'Rohit Sharma',
     story: 'Lost 12kg in 3 months and built lean muscle!',
-    beforeImg: 'https://images.unsplash.com/photo-1549476464-37392f717541?w=500&auto=format&fit=crop',
-    afterImg: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500&auto=format&fit=crop',
+    beforeImg: before1,
+    afterImg: after1,
   },
   {
     id: 2,
     name: 'Priya Singh',
     story: 'Incredible fat loss and toning. Completely transformed my energy levels.',
-    beforeImg: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&auto=format&fit=crop',
-    afterImg: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500&auto=format&fit=crop',
+    beforeImg: before2,
+    afterImg: after2,
   },
   {
     id: 3,
     name: 'Ankit Verma',
     story: 'Huge muscle gain transformation in just 6 months of heavy lifting.',
-    beforeImg: 'https://images.unsplash.com/photo-1583454155184-870a1f63aebc?w=500&auto=format&fit=crop',
-    afterImg: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&auto=format&fit=crop',
+    beforeImg: before3,
+    afterImg: after3,
   }
 ];
 

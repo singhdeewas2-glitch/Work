@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import './Trainers.css';
+import img1 from '../assets/gym13.1.jpg';
+import img2 from '../assets/gym13.2.jpg';
+import img3 from '../assets/gym15.1.jpg';
 
 const trainersData = [
   {
@@ -7,21 +10,21 @@ const trainersData = [
     name: 'Rahul Sharma',
     specialty: 'Strength & Conditioning',
     experience: '8 years experience',
-    image: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?auto=format&fit=crop&w=500',
+    image: img1,
   },
   {
     id: 2,
     name: 'Ankit Verma',
     specialty: 'Personal Trainer',
     experience: '10 years experience',
-    image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=500',
+    image: img2,
   },
   {
     id: 3,
     name: 'Priya Singh',
     specialty: 'Yoga & Mobility',
     experience: '6 years experience',
-    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=500',
+    image: img3,
   }
 ];
 
