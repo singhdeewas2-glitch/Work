@@ -8,6 +8,7 @@ const reviewsData = [
     name: 'Rohit Gupta',
     rating: 5,
     text: 'Amazing gym with great trainers. I saw real results in just 2 months.',
+    
   },
   {
     id: 2,

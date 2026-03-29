@@ -1,24 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import './Transformations.css';
-import before1 from '../assets/gym 5.webp';
-import after1 from '../assets/gym6.avif';
-import before2 from '../assets/gym8.avif';
-import after2 from '../assets/gym13.avif';
-import before3 from '../assets/gym15.jpg';
-import after3 from '../assets/gym2.jpg';
+import before1 from '../assets/gym13.1.jpg';
+import after1 from '../assets/gym13.2.jpg';
+import before2 from '../assets/gym15.1.jpg';
+import after2 from '../assets/gym15.jpg';
+import before3 from '../assets/gym16.jpg';
+import after3 from '../assets/gym16.1.jpg';
 
 const transformationsData = [
   {
     id: 1,
-    name: 'Rohit Sharma',
+    name: 'Manish Paul',
     story: 'Lost 12kg in 3 months and built lean muscle!',
     beforeImg: before1,
     afterImg: after1,
   },
   {
     id: 2,
-    name: 'Priya Singh',
-    story: 'Incredible fat loss and toning. Completely transformed my energy levels.',
+    name: 'Prashant Singh',
+    story: 'Huge muscle gain transformation. Completely transformed my energy levels.',
     beforeImg: before2,
     afterImg: after2,
   },

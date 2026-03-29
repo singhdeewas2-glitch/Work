@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import './Trainers.css';
-import img1 from '../assets/gym13.1.jpg';
-import img2 from '../assets/gym13.2.jpg';
-import img3 from '../assets/gym15.1.jpg';
+import img1 from '../assets/gym14.avif';
+import img2 from '../assets/gym12.avif';
+import img3 from '../assets/gym 9.avif';
 
 const trainersData = [
   {

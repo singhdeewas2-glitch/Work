@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import img1 from '../assets/gym14.avif';
+import img1 from '../assets/gym17.jpg';
 import img2 from '../assets/gym equiments.avif';
-import img3 from '../assets/gym10.webp';
-import img4 from '../assets/gym11.jpg';
-import img5 from '../assets/gym 9.avif';
-import img6 from '../assets/gym12.avif';
+import img3 from '../assets/gym18.jpg';
+import img4 from '../assets/gym3.jpg';
+import img5 from '../assets/gym4.jpg';
+import img6 from '../assets/gym19.jpg';
 import './Gallery.css';
 
 const galleryImages = [
