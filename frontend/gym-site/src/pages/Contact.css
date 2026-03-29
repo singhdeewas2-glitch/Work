@@ -1,0 +1,14 @@
+/* Inherits .page-header from About.css */
+.contact-page .page-header {
+  background: linear-gradient(rgba(10, 10, 10, 0.8), rgba(10, 10, 10, 0.9)), 
+              url('../assets/gym\ equiments.avif') center/cover;
+}
+
+.contact-details {
+  padding-bottom: 80px;
+}
+
+/* Override location section padding for the contact page so it blends cleanly */
+.contact-details .location-section {
+  padding-top: 80px;
+}

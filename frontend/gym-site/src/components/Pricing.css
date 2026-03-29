@@ -1,0 +1,103 @@
+.pricing {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  align-items: center;
+}
+
+.pricing-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 40px 30px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pricing-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+    border-color: var(--primary-color);
+  }
+
+  .pricing-card.popular:hover {
+    transform: scale(1.05) translateY(-10px);
+  }
+}
+
+.popular-badge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.4);
+}
+
+.pricing-header {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pricing-header h3 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: var(--text-main);
+}
+
+.price .amount {
+  font-size: 3.5rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+}
+
+.price .duration {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.pricing-features {
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.pricing-features li {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ddd;
+  font-size: 1rem;
+}
+
+.check-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.pricing-btn {
+  width: 100%;
+}
+
+@media screen and (max-width: 992px) {
+  .pricing-card.popular {
+    transform: scale(1);
+    box-shadow: 0 0 25px rgba(230, 57, 70, 0.15);
+  }
+}
