@@ -43,8 +43,8 @@ const Footer = () => {
             <h3>Contact Info</h3>
             <ul className="contact-list">
               <li><FaMapMarkerAlt className="icon" /> 123 Fitness Street, NY</li>
-              <li><FaPhoneAlt className="icon" /> +91 83890 44375</li>
-              <li><FaEnvelope className="icon" /> support@gymfit.com</li>
+              <li><FaPhoneAlt className="icon" /> <a href="tel:+919907076074">+91 99070 76074</a></li>
+              <li><FaEnvelope className="icon" /> <a href="mailto:support@gymfit.com">support@gymfit.com</a></li>
             </ul>
           </div>
         </div>

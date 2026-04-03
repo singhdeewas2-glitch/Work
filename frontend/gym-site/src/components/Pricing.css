@@ -1,103 +1,230 @@
+/* Premium Pricing Carousel Styles */
 .pricing {
-  background-color: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  padding: 80px 0;
+  background-color: #0f1115; /* Clean dark SaaS theme */
+  color: #fff;
 }
 
-.pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 30px;
-  align-items: center;
-}
-
-.pricing-card {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 40px 30px;
+.section-title {
   text-align: center;
-  position: relative;
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 50px;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .pricing-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
-    border-color: var(--primary-color);
-  }
+.section-title span {
+  color: #ef4444; /* Accent red */
+}
 
-  .pricing-card.popular:hover {
-    transform: scale(1.05) translateY(-10px);
+/* CAROUSEL ENGINE */
+.carousel-wrapper {
+
+  align-items: center;
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.carousel-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  gap: 24px;
+  padding: 20px 10px;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  width: 100%;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-slide {
+  scroll-snap-align: center;
+  flex: 0 0 100%; /* Mobile view: 1 card per view */
+  min-width: 300px;
+}
+
+@media (min-width: 768px) {
+  .carousel-slide {
+    flex: 0 0 calc(50% - 12px); /* Tablet: 2 cards */
   }
+}
+
+@media (min-width: 1024px) {
+  .carousel-slide {
+    flex: 0 0 calc(33.333% - 16px); /* Desktop: 3 cards */
+  }
+}
+
+/* CAROUSEL ARROWS & DOTS */
+.carousel-arrow {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  flex-shrink: 0;
+  margin: 0 10px;
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .carousel-arrow {
+    display: none; /* Hide arrows on mobile to force edge-swiping */
+  }
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333a45;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.dot.active {
+  background: #ef4444;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* CARDS */
+.pricing-card {
+  background: #1a1d24;
+  border-radius: 12px;
+  padding: 32px 24px;
+  border: 1px solid #2d333f;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.pricing-card.popular {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
 }
 
 .popular-badge {
   position: absolute;
-  top: 0;
+  top: -12px;
   left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: var(--primary-color);
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 30px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  transform: translateX(-50%);
+  background: #ef4444;
+  color: white;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.4);
-}
-
-.pricing-header {
-  margin-bottom: 30px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid var(--border-color);
+  letter-spacing: 0.05em;
 }
 
 .pricing-header h3 {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #cbd5e1;
   margin-bottom: 15px;
-  color: var(--text-main);
 }
 
-.price .amount {
-  font-size: 3.5rem;
-  font-weight: 800;
-  font-family: var(--font-heading);
-  color: var(--primary-color);
+.price {
+  margin-bottom: 25px;
 }
 
-.price .duration {
-  font-size: 1rem;
-  color: var(--text-muted);
+.amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.duration {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-left: 4px;
 }
 
 .pricing-features {
-  text-align: left;
-  margin-bottom: 40px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+  flex-grow: 1;
 }
 
 .pricing-features li {
-  margin-bottom: 15px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #ddd;
-  font-size: 1rem;
+  margin-bottom: 12px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
 }
 
 .check-icon {
-  color: var(--primary-color);
+  color: #10b981;
+  margin-right: 12px;
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
-.pricing-btn {
+/* PREMIUM SAAS BUTTONS */
+.saas-btn {
+  display: inline-block;
+  text-align: center;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
   width: 100%;
 }
 
-@media screen and (max-width: 992px) {
-  .pricing-card.popular {
-    transform: scale(1);
-    box-shadow: 0 0 25px rgba(230, 57, 70, 0.15);
-  }
+.saas-btn-primary {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.saas-btn-primary:hover {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+}
+
+.saas-btn-outline {
+  background: #111318;
+  color: #ffffff;
+  border: 1px solid #333a45;
+}
+
+.saas-btn-outline:hover {
+  background: #20242d;
+  border-color: #475569;
 }

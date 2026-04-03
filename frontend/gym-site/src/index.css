@@ -159,6 +159,11 @@ section {
   .section-title {
     font-size: 1.75rem;
   }
+
+  .btn {
+    padding: 12px 25px;
+    font-size: 0.9rem;
+  }
 }
 
 .section-subtitle {

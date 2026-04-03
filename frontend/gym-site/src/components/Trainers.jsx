@@ -1,69 +1,28 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import Carousel from './Carousel';
 import './Trainers.css';
+
 import img1 from '../assets/gym14.avif';
 import img2 from '../assets/gym12.avif';
 import img3 from '../assets/gym 9.avif';
 
 const trainersData = [
-  {
-    id: 1,
-    name: 'Rahul Sharma',
-    specialty: 'Strength & Conditioning',
-    experience: '8 years experience',
-    image: img1,
-  },
-  {
-    id: 2,
-    name: 'Ankit Verma',
-    specialty: 'Personal Trainer',
-    experience: '10 years experience',
-    image: img2,
-  },
-  {
-    id: 3,
-    name: 'Priya Singh',
-    specialty: 'Yoga & Mobility',
-    experience: '6 years experience',
-    image: img3,
-  }
+  { id: 1, name: 'Rahul Sharma', specialty: 'Strength & Conditioning', experience: '8 years exp', image: img1 },
+  { id: 2, name: 'Ankit Verma', specialty: 'Personal Trainer', experience: '10 years exp', image: img2 },
+  { id: 3, name: 'Priya Singh', specialty: 'Yoga & Mobility', experience: '6 years exp', image: img3 }
 ];
 
 const Trainers = () => {
-  const sectionRef = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    const cards = sectionRef.current.querySelectorAll('.reveal');
-    cards.forEach((card) => observer.observe(card));
-
-    return () => {
-      cards.forEach((card) => observer.unobserve(card));
-    };
-  }, []);
-
   return (
-    <section className="trainers" id="trainers" ref={sectionRef}>
+    <section className="trainers" id="trainers">
       <div className="container">
-        <h2 className="section-title reveal">Meet Our Expert<br/><span>Trainers</span></h2>
-        <p className="section-subtitle reveal">Certified professionals dedicated to your success</p>
+        <h2 className="section-title">Meet Our Expert<br/><span>Trainers</span></h2>
+        <p className="trainers-subtitle">Certified professionals dedicated to your success</p>
         
-        <div className="trainers-scroll-container">
-          {trainersData.map((trainer, index) => (
-            <div 
-              className="trainer-card reveal" 
-              key={trainer.id}
-              style={{ transitionDelay: `${index * 0.1}s` }}
-            >
+        <Carousel 
+          items={trainersData}
+          renderItem={(trainer) => (
+            <div className="trainer-card">
               <img className="trainer-img" src={trainer.image} alt={trainer.name} loading="lazy" />
               <div className="trainer-overlay">
                 <h3>{trainer.name}</h3>
@@ -71,8 +30,8 @@ const Trainers = () => {
                 <div className="trainer-exp">{trainer.experience}</div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        />
       </div>
     </section>
   );
