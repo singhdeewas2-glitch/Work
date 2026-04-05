@@ -44,7 +44,7 @@
 .trans-image-split {
   display: flex;
   width: 100%;
-  height: 280px; /* Fixed height for uniformity */
+  aspect-ratio: 4 / 3; /* Responsive scale rather than fixed px height */
 }
 
 .trans-img-wrapper {
@@ -127,10 +127,23 @@
   
   .trans-grid {
     grid-template-columns: 1fr;
-    max-width: 450px;
+    max-width: 100%; /* Removing fixed max-width 450px */
+    padding: 0 10px;
   }
   
   .trans-image-split {
-    height: 320px; /* Taller on mobile for better visibility */
+    aspect-ratio: 1 / 1; /* Taller on mobile for better visibility */
+  }
+  
+  .trans-name {
+    font-size: 1.15rem;
+  }
+  
+  .trans-quote {
+    font-size: 0.9rem;
+  }
+
+  .trans-card-content {
+     padding: 20px 15px;
   }
 }

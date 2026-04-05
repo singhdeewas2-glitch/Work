@@ -21,6 +21,7 @@ try {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [dbUser, setDbUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,16 +35,33 @@ export const AuthProvider = ({ children }) => {
     }
     const currentUser = userPool.getCurrentUser();
     if (currentUser) {
-      currentUser.getSession((err, session) => {
+      currentUser.getSession(async (err, session) => {
         if (err || !session.isValid()) {
           setUser(null);
+          setDbUser(null);
+          setLoading(false);
         } else {
           setUser(currentUser);
+          await fetchDbProfile(session.getIdToken().getJwtToken());
+          setLoading(false);
         }
-        setLoading(false);
       });
     } else {
       setLoading(false);
+    }
+  };
+
+  const fetchDbProfile = async (token) => {
+    try {
+      const response = await fetch('http://localhost:8080/api/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDbUser(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch DB user data:", err);
     }
   };
 
@@ -102,8 +120,9 @@ const attributeList = [
       const authDetails = new AuthenticationDetails({ Username: email, Password: password });
       
       cognitoUser.authenticateUser(authDetails, {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
           setUser(cognitoUser);
+          await fetchDbProfile(data.getIdToken().getJwtToken());
           resolve(data);
         },
         onFailure: (err) => {
@@ -121,6 +140,7 @@ const attributeList = [
       currentUser.signOut();
     }
     setUser(null);
+    setDbUser(null);
   };
 
   const forgotPassword = async (email) => {
@@ -154,7 +174,7 @@ const attributeList = [
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, session: getSession, signup, login, logout, forgotPassword, confirmPassword }}>
+    <AuthContext.Provider value={{ user, dbUser, loading, session: getSession, signup, login, logout, forgotPassword, confirmPassword }}>
       {!loading && children}
     </AuthContext.Provider>
   );

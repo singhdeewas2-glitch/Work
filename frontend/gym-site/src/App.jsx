@@ -11,6 +11,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import SuccessStories from './pages/Transformations';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
+import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider } from './context/AuthContext';
 function App() {
   useEffect(() => {
@@ -47,6 +49,11 @@ function App() {
             <PrivateRoute>
               <Profile />
             </PrivateRoute>
+          } />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           } />
         </Routes>
         <Footer />

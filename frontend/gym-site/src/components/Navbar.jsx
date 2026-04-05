@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, dbUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -65,11 +65,20 @@ const Navbar = () => {
             <Link to="/contact" onClick={() => setIsOpen(false)}>Contact</Link>
           </li>
           {user ? (
-            <li>
-              <Link to="/profile" className="btn btn-outline nav-btn" style={{padding: '10px 20px'}} onClick={() => setIsOpen(false)}>
-                Dashboard
-              </Link>
-            </li>
+            <>
+              {dbUser?.role === 'admin' && (
+                <li>
+                  <Link to="/admin" className="btn btn-outline nav-btn" style={{padding: '10px 20px', border: '1px solid var(--accent-red)'}} onClick={() => setIsOpen(false)}>
+                    Admin
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link to="/profile" className="btn btn-outline nav-btn" style={{padding: '10px 20px'}} onClick={() => setIsOpen(false)}>
+                  Dashboard
+                </Link>
+              </li>
+            </>
           ) : (
             <li>
               <Link to="/login" className="btn btn-outline nav-btn" style={{padding: '10px 20px'}} onClick={() => setIsOpen(false)}>
