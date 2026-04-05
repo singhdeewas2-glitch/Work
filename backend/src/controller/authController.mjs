@@ -75,7 +75,14 @@ export const getProfile = async (req, res) => {
     let userProfile = await User.findOne({ userId });
     
     if (!userProfile) {
-      userProfile = new User({ userId, email: req.user.email });
+      userProfile = new User({ 
+        userId, 
+        email: req.user.email,
+        role: req.user.email === 'admin@gmail.com' ? 'admin' : 'user'
+      });
+      await userProfile.save();
+    } else if (req.user.email === 'admin@gmail.com' && userProfile.role !== 'admin') {
+      userProfile.role = 'admin';
       await userProfile.save();
     }
     
