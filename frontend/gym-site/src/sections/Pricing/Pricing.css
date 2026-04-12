@@ -1,0 +1,119 @@
+/* Pricing Section Styles */
+
+.pricing-section {
+  padding: 80px 0;
+  background-color: #0f1115;
+  color: #fff;
+}
+
+.pricing-section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 50px;
+}
+
+.pricing-section-title span {
+  color: #ef4444;
+}
+
+.pricing-card {
+  background: #1a1d24;
+  border-radius: 12px;
+  padding: 32px 24px;
+  border: 1px solid #2d333f;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.pricing-card.pricing-card--popular {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+}
+
+.plan-popular-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444;
+  color: white;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.plan-card-header h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 15px;
+}
+
+.plan-price-row {
+  margin-bottom: 25px;
+}
+
+.plan-price-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.plan-price-duration {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.plan-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+  flex-grow: 1;
+}
+
+.plan-features-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.plan-feature-icon {
+  color: #10b981;
+  margin-right: 12px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .pricing-section {
+    padding: 60px 0;
+  }
+  
+  .pricing-section-title {
+    font-size: 2rem;
+    margin-bottom: 40px;
+  }
+  
+  .pricing-card {
+    padding: 24px 20px;
+  }
+  
+  .plan-price-amount {
+    font-size: 2rem;
+  }
+}

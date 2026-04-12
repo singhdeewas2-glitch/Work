@@ -1,0 +1,152 @@
+import React, { useState, useEffect } from 'react';
+import { FaCheck } from 'react-icons/fa';
+import Carousel from '../../components/Carousel/Carousel';
+import { useAuth } from '../../context/AuthContext';
+import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
+import { JoinPlanButton } from '../../components/UI/ContactButtons';
+import './Pricing.css';
+
+const getPlanType = (title) => {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('monthly')) return 'monthly';
+  if (titleLower.includes('quarterly')) return 'quarterly';
+  if (titleLower.includes('personal')) return 'personal';
+  return 'monthly'; // default
+};
+
+/* Single plan card inside the carousel */
+const PricingCard = ({ plan }) => {
+  return (
+    <div className={`pricing-card${plan.isPopular ? ' pricing-card--popular' : ''}`}>
+      {plan.isPopular && <div className="plan-popular-badge">Most Popular</div>}
+
+      <div className="plan-card-header">
+        <h3>{plan.title}</h3>
+        <div className="plan-price-row">
+          <span className="plan-price-amount">{plan.price}</span>
+          <span className="plan-price-duration">{plan.duration}</span>
+        </div>
+      </div>
+
+      <ul className="plan-features-list">
+        {plan.features?.map((feature, i) => (
+          <li key={i}><FaCheck className="plan-feature-icon" /> {feature}</li>
+        ))}
+      </ul>
+
+      <JoinPlanButton 
+        planType={getPlanType(plan.title)}
+        planTitle={plan.title}
+        className={plan.isPopular ? 'plan-join-button--primary' : 'plan-join-button--outline'}
+      />
+    </div>
+  );
+};
+
+/* Plans section + optional admin editor */
+const Pricing = () => {
+  const [pricingData, setPricingData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const { dbUser } = useAuth();
+  const isAdmin = dbUser?.role === 'admin';
+
+  const schema = [
+    { key: 'title', label: 'Plan Title', type: 'text', required: true },
+    { key: 'price', label: 'Price (e.g. $50)', type: 'text', required: true },
+    { key: 'duration', label: 'Duration (e.g. /month)', type: 'text', default: '/month' },
+    { key: 'features', label: 'Features', type: 'array' },
+    { key: 'isPopular', label: 'Mark as Most Popular', type: 'boolean' },
+  ];
+
+  useEffect(() => {
+    fetchPrices();
+  }, []);
+
+  const fetchPrices = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/plans');
+      if (response.ok) {
+        const data = await response.json();
+        setPricingData(data);
+      }
+    } catch (err) {
+      // Pricing fetch error - handled by UI state
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdminSave = async (payload, id, token) => {
+    const method = id ? 'PUT' : 'POST';
+    const url = id
+      ? `http://localhost:8080/api/admin/prices/${id}`
+      : 'http://localhost:8080/api/admin/prices';
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to save plan');
+    await fetchPrices();
+  };
+
+  const handleAdminDelete = async (id, token) => {
+    const res = await fetch(`http://localhost:8080/api/admin/prices/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to delete plan');
+    await fetchPrices();
+  };
+
+  return (
+    <section className="pricing-section" id="plans">
+      <div className="container">
+
+        <h2 className="pricing-section-title">Choose Your <span>Plan</span></h2>
+
+        {isAdmin && (
+          <div className="admin-toolbar">
+            <button type="button" onClick={() => setIsEditorOpen(true)} className="btn btn-outline btn-compact">
+              Edit
+            </button>
+          </div>
+        )}
+
+        {loading ? (
+          <p className="page-hint">Loading plans...</p>
+        ) : pricingData.length === 0 ? (
+          <p className="page-hint">No plans available right now.</p>
+        ) : (
+          <Carousel
+            items={pricingData}
+            renderItem={(plan) => (
+              <PricingCard
+                key={plan._id || Math.random()}
+                plan={plan}
+              />
+            )}
+          />
+        )}
+      </div>
+
+      <AdminEditorModal
+        title="Pricing Plans"
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        items={pricingData}
+        schema={schema}
+        onSave={handleAdminSave}
+        onDelete={handleAdminDelete}
+      />
+    </section>
+  );
+};
+
+export default Pricing;

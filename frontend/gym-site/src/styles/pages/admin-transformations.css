@@ -1,0 +1,60 @@
+.adminTransformationsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.adminTransCard {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 20, 0.6);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.adminTransImages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.adminTransImages img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #111;
+}
+
+.adminTransContent {
+  padding: 14px;
+}
+
+.adminTransContent h3 {
+  margin: 0 0 8px;
+}
+
+.adminTransContent p {
+  color: #9ca3af;
+  margin: 0 0 12px;
+}
+
+.adminTransMeta {
+  display: flex;
+  gap: 12px;
+  color: #fca5a5;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.adminTransformationsState {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 20, 0.6);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.adminTransformationsState.error {
+  color: #ef4444;
+}

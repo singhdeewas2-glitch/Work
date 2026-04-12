@@ -1,0 +1,785 @@
+
+
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { profileUi } from "../../config/uiConfig";
+import {
+  fetchProfile as loadProfileApi,
+  updateProfile as saveProfileApi,
+} from "../../services/profileService";
+import { useWeightChartData } from "../../hooks/useWeightChartData";
+import WeightAreaChart from "../../components/charts/WeightAreaChart";
+
+// Replaced faulty third-party countup with stable native animation to prevent ESM object crash
+const CountUp = ({ end, decimals = 0, duration = 2, suffix = "" }) => {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp = null;
+    let animationFrame;
+    let isMounted = true; // Defensive detached tree guard
+
+    const step = (timestamp) => {
+      if (!isMounted) return; // Prevent calculations if unmounted
+      
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setValue(easeOut * end);
+      
+      if (progress < 1) {
+        animationFrame = window.requestAnimationFrame(step);
+      }
+    };
+    
+    animationFrame = window.requestAnimationFrame(step);
+    
+    return () => {
+      isMounted = false; // Flag defensive cleanup early
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [end, duration]);
+
+  return (
+    <span>
+      {Number(value.toFixed(decimals)).toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })}
+      {suffix}
+    </span>
+  );
+};
+
+const Profile = () => {
+  const { session, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Component lifecycle tracking to prevent detached tree / state update crashes
+  const isMounted = useRef(true);
+
+  // Initialize and securely track mount state
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const [profile, setProfile] = useState({
+    name: "",
+    bio: "",
+    weight: "",
+    startingWeight: "",
+    goal: "",
+    email: "",
+    profileImage: "",
+    progressHistory: [],
+  });
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState({ text: "", type: "" }); 
+  const [timeView, setTimeView] = useState("week");
+  
+  const avatarInputRef = useRef(null);
+  const editAvatarInputRef = useRef(null);
+
+  const getValidToken = useCallback(async () => {
+    try {
+      const currentSession = await session();
+      return currentSession.getIdToken().getJwtToken();
+    } catch (err) {
+      if (isMounted.current) {
+        logout();
+        navigate("/login");
+      }
+      throw err;
+    }
+  }, [session, logout, navigate]);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      if (isMounted.current) setLoading(true);
+
+      const token = await getValidToken();
+      if (!token) {
+        if (isMounted.current) navigate("/login");
+        return;
+      }
+
+      const { ok, status, data } = await loadProfileApi(token);
+
+      if (ok && isMounted.current) {
+        setProfile((prev) => ({ ...prev, ...data }));
+        return;
+      }
+
+      if (status === 401 && isMounted.current) {
+        logout();
+        navigate("/login");
+      }
+    } catch (err) {
+      // Profile fetch error - handled by UI state
+    } finally {
+      if (isMounted.current) setLoading(false);
+    }
+  }, [getValidToken, logout, navigate]);
+
+  useEffect(() => {
+    fetchProfile();
+    // Intentionally omitting physical cleanup return here because fetchProfile 
+    // now uses native isMounted.current checks embedded into every async step.
+  }, [fetchProfile]);
+
+  const { chartData, refetchChart } = useWeightChartData(
+    getValidToken,
+    timeView,
+  );
+
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!isMounted.current) return;
+    
+    setSaving(true);
+    setMessage({ text: "", type: "" });
+
+    try {
+      const token = await getValidToken();
+      if (!token) {
+        if (isMounted.current) {
+          setMessage({ text: profileUi.messages.sessionExpired, type: "error" });
+          navigate("/login");
+        }
+        return;
+      }
+
+      const { ok, data } = await saveProfileApi(token, {
+        name: profile.name,
+        bio: profile.bio,
+        weight: profile.weight,
+        startingWeight: profile.startingWeight,
+        goal: profile.goal,
+        profileImage: profile.profileImage || "",
+      });
+
+      if (!ok) throw new Error(data?.error || "Update failed");
+
+      if (isMounted.current) {
+        setMessage({ text: profileUi.messages.profileUpdated, type: "success" });
+        setIsEditing(false);
+      }
+
+      await fetchProfile();
+      await refetchChart();
+
+      if (isMounted.current) {
+        setTimeout(() => {
+          if (isMounted.current) setMessage({ text: "", type: "" });
+        }, 3000);
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setMessage({
+          text: err.message || "Something went wrong",
+          type: "error",
+        });
+      }
+    } finally {
+      if (isMounted.current) setSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const persistProfileImage = useCallback(
+    async (imageUrl) => {
+      const token = await getValidToken();
+      const { ok } = await saveProfileApi(token, {
+        name: profile.name,
+        bio: profile.bio,
+        weight: profile.weight,
+        startingWeight: profile.startingWeight,
+        goal: profile.goal,
+        profileImage: imageUrl || "",
+      });
+      if (!ok) throw new Error("Failed to update profile image.");
+    },
+    [getValidToken, profile],
+  );
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !isMounted.current) return;
+
+    try {
+      setAvatarUploading(true);
+      setAvatarMessage({ text: "", type: "" });
+
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        if (!isMounted.current) return;
+        
+        const base64String = reader.result;
+        try {
+          await persistProfileImage(base64String);
+          if (!isMounted.current) return;
+          
+          setProfile((prev) => ({ ...prev, profileImage: base64String }));
+          setAvatarMessage({ text: profileUi.messages.photoUpdated, type: "success" });
+          setMessage({ text: profileUi.messages.photoUpdated, type: "success" });
+          
+          setTimeout(() => {
+            if (isMounted.current) {
+              setIsAvatarModalOpen(false);
+              setAvatarMessage({ text: "", type: "" });
+            }
+          }, 1500);
+        } catch {
+          if (isMounted.current) {
+            setAvatarMessage({ text: profileUi.messages.photoSaveFail, type: "error" });
+          }
+        } finally {
+          if (isMounted.current) setAvatarUploading(false);
+          event.target.value = "";
+        }
+      };
+
+      reader.onerror = () => {
+        if (isMounted.current) {
+          setAvatarMessage({ text: profileUi.messages.photoReadFail, type: "error" });
+          setAvatarUploading(false);
+        }
+        event.target.value = "";
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err) {
+      if (isMounted.current) {
+        setAvatarMessage({ text: profileUi.messages.unexpected, type: "error" });
+        setAvatarUploading(false);
+      }
+      event.target.value = "";
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!isMounted.current) return;
+    const backupImage = profile.profileImage;
+    setProfile((prev) => ({ ...prev, profileImage: "" }));
+    
+    try {
+      if (!isEditing) await persistProfileImage("");
+      
+      if (!isMounted.current) return;
+      
+      setAvatarMessage({ text: profileUi.messages.photoRemoved, type: "success" });
+      setMessage({ text: profileUi.messages.photoRemoved, type: "success" });
+      
+      setTimeout(() => {
+        if (isMounted.current) {
+          setIsAvatarModalOpen(false);
+          setAvatarMessage({ text: "", type: "" });
+        }
+      }, 1500);
+    } catch {
+      if (!isMounted.current) return;
+      setProfile((prev) => ({ ...prev, profileImage: backupImage })); // Revert on failure
+      setAvatarMessage({ text: profileUi.messages.photoRemoveFail, type: "error" });
+    }
+  };
+
+  const progressPercentage = useMemo(() => {
+    if (!profile.startingWeight || !profile.weight) return 0;
+    const start = parseFloat(profile.startingWeight);
+    const current = parseFloat(profile.weight);
+    let goal = parseFloat(profile.goal);
+
+    if (isNaN(start) || isNaN(current)) return 0;
+
+    // Estimate progress if string/null goal mapped
+    if (isNaN(goal)) return Math.min((Math.abs(start - current) / 10) * 100, 100);
+
+    const totalDiff = Math.abs(start - goal);
+    const currentDiff = Math.abs(start - current);
+
+    if (totalDiff === 0) return 100;
+    let progress = (currentDiff / totalDiff) * 100;
+    return Math.max(0, Math.min(progress, 100)); // Clamp between 0 and 100
+  }, [profile.startingWeight, profile.weight, profile.goal]);
+
+  const getInsightText = useCallback(() => {
+    if (!profile.startingWeight || !profile.weight || isNaN(profile.startingWeight) || isNaN(profile.weight)) return null;
+    const diff = parseFloat(profile.startingWeight) - parseFloat(profile.weight);
+
+    if (diff > 5) return <span>Incredible momentum. You've lost <strong className="highlightWhite">{diff.toFixed(1)} kg</strong> overall!</span>;
+    if (diff > 0) return <span>Consistent progress. You lost <strong className="highlightWhite">{diff.toFixed(1)} kg</strong> {timeView === "year" ? "this year" : timeView === "month" ? "this month" : "this week"}.</span>;
+    if (diff === 0) return <span>Weight is stabilizing. Plateaus are a normal part of the process.</span>;
+    return <span>Your mass increased by <strong className="highlightWhite">{Math.abs(diff).toFixed(1)} kg</strong>. Muscle building phase active.</span>;
+  }, [profile.startingWeight, profile.weight, timeView]);
+
+  const rawEntryCount = chartData.filter((d) => d.weight != null).length;
+  const shouldRenderLine = rawEntryCount >= 1;
+
+  const chartInnerMinWidth = useMemo(() => {
+    const n = chartData.length;
+    if (timeView === "week") return undefined;
+    if (timeView === "month") return Math.max(320, n * 22);
+    if (timeView === "year") return Math.max(640, 12 * 56);
+    return undefined;
+  }, [timeView, chartData.length]);
+
+  const xAxisTick = useMemo(() => {
+    if (timeView === "month") return { fill: "#a1a1aa", fontSize: 9 };
+    return { fill: "#a1a1aa", fontSize: 11 };
+  }, [timeView]);
+
+  if (loading) return (
+    <div className="profile-loading-screen">
+      <div className="profile-loading-spinner" />
+    </div>
+  );
+
+  const renderWeight = (value) => {
+    if (value === null || value === undefined || value === "" || Number.isNaN(Number(value))) return "--";
+    return (
+      <>
+        <span className="metricNumberNew">
+          <CountUp end={parseFloat(value)} decimals={1} duration={2} />
+        </span>
+        <span className="metricUnitNew">kg</span>
+      </>
+    );
+  };
+
+  return (
+    <section className="dashboardNewShell">
+      <div className="dashboardNewFrame">
+        {message.text && (
+          <div className={`status-message ${message.type}`}>{message.text}</div>
+        )}
+
+        {isEditing ? (
+          <form className="premiumForm" onSubmit={handleSave}>
+            <div className="profile-form-field">
+              <label>{profileUi.editForm.fullName}</label>
+              <input
+                type="text"
+                name="name"
+                value={profile.name || ""}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            <div className="profile-form-row">
+              <div className="profile-form-field">
+                <label>{profileUi.editForm.startingWeight}</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  name="startingWeight"
+                  value={profile.startingWeight || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. 85"
+                />
+              </div>
+              <div className="profile-form-field">
+                <label>{profileUi.editForm.currentWeight}</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  name="weight"
+                  value={profile.weight || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. 75"
+                />
+              </div>
+              <div className="profile-form-field">
+                <label>{profileUi.editForm.goal}</label>
+                <input
+                  type="text"
+                  name="goal"
+                  value={profile.goal || ""}
+                  onChange={handleChange}
+                  placeholder="e.g. 65"
+                />
+              </div>
+            </div>
+
+            <div className="profile-form-field">
+              <label>{profileUi.editForm.bio}</label>
+              <textarea
+                name="bio"
+                value={profile.bio || ""}
+                onChange={handleChange}
+                placeholder="Tell us about your fitness journey..."
+                rows="4"
+              ></textarea>
+            </div>
+
+            <div className="profile-form-actions">
+              <button
+                type="button"
+                className={`btn btn-outline`}
+                onClick={() => setIsEditing(false)}
+              >
+                {profileUi.editForm.cancel}
+              </button>
+              <button
+                type="submit"
+                className={`btn btn-primary`}
+                disabled={saving}
+              >
+                {saving ? profileUi.editForm.saving : profileUi.editForm.save}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="dashboardNewGrid">
+            <section className="dashboardTopNewGrid">
+              <div className="dashboardTopLeftNew">
+                <button
+                  type="button"
+                  className="dashboardProfilePhotoNew avatarTriggerNew"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  aria-label={profileUi.avatar.ariaOpen}
+                >
+                  {profile.profileImage ? (
+                    <img
+                      src={profile.profileImage}
+                      alt="Profile"
+                      className="profileAvatarImgNew"
+                    />
+                  ) : (
+                    (profile.name || "D").trim().charAt(0).toUpperCase()
+                  )}
+                </button>
+                <div className="dashboardProfileCopyNew">
+                  <span className="dashboardTargetPillNew">
+                    {profile.goal
+                      ? `${profileUi.targetPrefix} ${profile.goal}`
+                      : `${profileUi.targetPrefix} ${profileUi.targetEmpty}`}
+                  </span>
+                  <h1>{profile.name || profileUi.defaultName}</h1>
+                  <p>{profileUi.dashboardSubtitle}</p>
+                </div>
+              </div>
+
+              <div className="dashboardTopRightNew">
+                <div className="dashboardProgressOrbitNew">
+                  <svg viewBox="0 0 100 100">
+                    <circle
+                      className="orbitBgNew"
+                      cx="50"
+                      cy="50"
+                      r="45"
+                    ></circle>
+                    <circle
+                      className="orbitMeterNew"
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      style={{
+                        strokeDashoffset:
+                          283 - (283 * progressPercentage) / 100,
+                      }}
+                    ></circle>
+                  </svg>
+                  <div className="dashboardProgressTextNew">
+                    <strong>
+                      <CountUp
+                        end={progressPercentage}
+                        decimals={0}
+                        duration={2}
+                        suffix="%"
+                      />
+                    </strong>
+                    <span>{profileUi.progressCompleted}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="dashboardGraphCardNew">
+              <div className="dashboardGraphHeadNew">
+                <div className="dashboard-graph-head-spacer">
+                  <h3>{profileUi.analyticsTitle}</h3>
+                </div>
+                <div className="dashboardGraphSwitchNew">
+                  <button
+                    type="button"
+                    className={timeView === "week" ? "active" : ""}
+                    onClick={() => setTimeView("week")}
+                  >
+                    {profileUi.rangeWeek}
+                  </button>
+                  <button
+                    type="button"
+                    className={timeView === "month" ? "active" : ""}
+                    onClick={() => setTimeView("month")}
+                  >
+                    {profileUi.rangeMonth}
+                  </button>
+                  <button
+                    type="button"
+                    className={timeView === "year" ? "active" : ""}
+                    onClick={() => setTimeView("year")}
+                  >
+                    {profileUi.rangeYear}
+                  </button>
+                </div>
+              </div>
+
+              <WeightAreaChart
+                chartData={chartData}
+                timeView={timeView}
+                rawEntryCount={rawEntryCount}
+                shouldRenderLine={shouldRenderLine}
+                chartInnerMinWidth={chartInnerMinWidth}
+                xAxisTick={xAxisTick}
+                emptyMessage={profileUi.chartEmpty}
+              />
+
+              {/* Placed insight completely below the graph logic per UX parameters */}
+              {getInsightText() && (
+                <div className="dashboardGraphInsightSubCardNew">
+                  <p>{getInsightText()}</p>
+                </div>
+              )}
+            </section>
+
+            <section className="kpiGridNewLayout">
+              <article className="kpiNewCard">
+                <span>{profileUi.kpi.starting}</span>
+                <h4>{renderWeight(profile.startingWeight)}</h4>
+              </article>
+              <article className="kpiNewCard">
+                <span>{profileUi.kpi.current}</span>
+                <h4>{renderWeight(profile.weight)}</h4>
+              </article>
+              <article
+                className="kpiNewCard kpiNewCardHighlight"
+              >
+                <span>{profileUi.kpi.totalLost}</span>
+                <h4>
+                  {profile.startingWeight &&
+                  profile.weight &&
+                  !isNaN(profile.startingWeight) &&
+                  !isNaN(profile.weight)
+                    ? renderWeight(
+                        parseFloat(profile.startingWeight) -
+                          parseFloat(profile.weight),
+                      )
+                    : "--"}
+                </h4>
+              </article>
+              <article className="kpiNewCard">
+                <span>{profileUi.kpi.goalRemaining}</span>
+                <h4>
+                  {profile.weight &&
+                  profile.goal &&
+                  !isNaN(profile.weight) &&
+                  !isNaN(profile.goal)
+                    ? renderWeight(
+                        Math.max(
+                          0,
+                          parseFloat(profile.weight) - parseFloat(profile.goal),
+                        ),
+                      )
+                    : "--"}
+                </h4>
+              </article>
+            </section>
+
+            <section className="dashboardLowerNewGrid">
+              <article className="dashboardLowerCardNew">
+                <div className="dashboardLowerHeadNew">
+                  <h4>{profileUi.lower.progressTitle}</h4>
+                  <span>
+                    {progressPercentage > 0 ? (
+                      <CountUp
+                        end={progressPercentage}
+                        decimals={0}
+                        duration={2}
+                        suffix="%"
+                      />
+                    ) : (
+                      "0%"
+                    )}{" "}
+                    {profileUi.lower.progressDone}
+                  </span>
+                </div>
+                <div className="dashboardLowerTrackNew">
+                  <div
+                    className="dashboardLowerFillNew"
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
+                </div>
+                <p>{profileUi.lower.quote}</p>
+              </article>
+              <article className="dashboardLowerCardNew">
+                <h4>{profileUi.lower.activityTitle}</h4>
+                <ul>
+                  {profileUi.lower.activityItems.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </article>
+            </section>
+
+            <div className="dashboardNewActions">
+              <button
+                type="button"
+                className={`btn btn-outline`}
+                onClick={() => setIsEditing(true)}
+              >
+                {profileUi.actions.editProfile}
+              </button>
+              <button
+                type="button"
+                className={`btn btn-primary`}
+                onClick={handleLogout}
+              >
+                {profileUi.actions.logout}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isEditing && (
+          <section className="editAvatarNewBlock">
+            <div className="editAvatarPreviewNew">
+              {profile.profileImage ? (
+                <img
+                  src={profile.profileImage}
+                  alt="Profile preview"
+                  className="profileAvatarImgNew"
+                />
+              ) : (
+                (profile.name || "D").trim().charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="editAvatarControlsNew">
+              <button
+                type="button"
+                className={`btn btn-primary`}
+                onClick={() => editAvatarInputRef.current?.click()}
+                disabled={avatarUploading}
+              >
+                {avatarUploading
+                  ? profileUi.avatar.uploading
+                  : profileUi.avatar.uploadChange}
+              </button>
+              <button
+                type="button"
+                className={`btn btn-outline`}
+                onClick={handleAvatarRemove}
+                disabled={avatarUploading}
+              >
+                {profileUi.avatar.remove}
+              </button>
+              <input
+                ref={editAvatarInputRef}
+                type="file"
+                accept="image/*"
+                className="avatarInputHiddenNew"
+                onChange={handleAvatarUpload}
+              />
+            </div>
+          </section>
+        )}
+      </div>
+
+      {isAvatarModalOpen && (
+        <div
+          className="avatarModalOverlayNew"
+          onClick={() => setIsAvatarModalOpen(false)}
+        >
+          <div
+            className="avatarModalCardNew"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="avatarModalPreviewNew">
+              {avatarMessage.text && (
+                <div
+                  className={`status-message ${avatarMessage.type}`}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    width: "90%",
+                    left: "5%",
+                    zIndex: 100,
+                    textAlign: "center",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  {avatarMessage.text}
+                </div>
+              )}
+              {profile.profileImage ? (
+                <img
+                  src={profile.profileImage}
+                  alt="Profile enlarged"
+                  className="profileAvatarImgNew"
+                />
+              ) : (
+                (profile.name || "D").trim().charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="avatarModalActionsNew">
+              <button
+                type="button"
+                className={`btn btn-primary`}
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+              >
+                {avatarUploading
+                  ? profileUi.avatar.uploading
+                  : profileUi.avatar.changePhoto}
+              </button>
+              <button
+                type="button"
+                className={`btn btn-outline`}
+                onClick={handleAvatarRemove}
+                disabled={avatarUploading}
+              >
+                {profileUi.avatar.remove}
+              </button>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="avatarInputHiddenNew"
+              onChange={handleAvatarUpload}
+            />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
+export default Profile;

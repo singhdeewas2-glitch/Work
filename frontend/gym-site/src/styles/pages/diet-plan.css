@@ -1,0 +1,272 @@
+.dietPage {
+  min-height: 100vh;
+  padding-top: 100px;
+  padding-bottom: 80px;
+  background: var(--bg-gradient);
+  color: var(--text-main);
+}
+
+.diet-page-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 100px auto;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border-left-color: var(--accent-red);
+  animation: diet-plan-spin 1s linear infinite;
+}
+
+@keyframes diet-plan-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dietHero {
+  text-align: center;
+  margin-bottom: 48px;
+  padding: 0 20px;
+}
+
+.dietHero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.dietHero p {
+  color: #a1a1aa;
+  font-size: 1.1rem;
+}
+
+.dietContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.dietMsg {
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: #4ade80;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* Admin Form */
+.adminActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.adminDietForm {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.adminDietForm h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  color: var(--accent-red);
+}
+
+.diet-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.diet-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.diet-form-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.diet-form-field input,
+.diet-form-field select,
+.diet-form-field textarea {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.diet-form-field input:focus,
+.diet-form-field select:focus,
+.diet-form-field textarea:focus {
+  outline: none;
+  border-color: var(--accent-red);
+}
+
+.diet-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Meal Grid */
+.dietMealsGrid {
+  display: grid;
+  gap: 32px;
+}
+
+.mealSection {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.mealTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #fff;
+  display: inline-block;
+  border-bottom: 2px solid var(--accent-red);
+  padding-bottom: 4px;
+}
+
+.noDietText {
+  color: #71717a;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.dietCards {
+  display: grid;
+  gap: 16px;
+}
+
+.dietCard {
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-color);
+  padding: 0;
+  margin: 10px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: var(--transition);
+  height: calc(100% - 20px);
+}
+
+.dietCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: var(--shadow-card);
+}
+
+.dietImageWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dietImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dietInfo {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.dietItems {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: #f4f4f5;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.dietMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.metaBadge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.metaBadge.cal {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.metaBadge.notes {
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.adminControls {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg) var(--space-md);
+}
+
+.adminControls button {
+  padding: 4px 10px !important;
+  font-size: 0.75rem !important;
+  border-radius: 4px;
+}
+
+/* Responsive constraints */
+@media (max-width: 768px) {
+  .diet-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .dietHero h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dietCard {
+    margin: 5px;
+  }
+}

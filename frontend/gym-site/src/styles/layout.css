@@ -1,0 +1,152 @@
+/* Page width, section rhythm, shared headings */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+section {
+  padding: 80px 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.section-title span {
+  color: var(--primary-color);
+}
+
+.section-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 40px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Scroll-in animation (used across homepage sections) */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  will-change: transform, opacity;
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+
+/* Status banners (profile, forms) */
+.status-message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.status-message.success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.status-message.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+/* Admin “Edit” toolbar (pricing, trainers, transformations) */
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  margin-top: -10px;
+}
+
+.admin-toolbar--flush {
+  margin-top: 0;
+}
+
+.admin-toolbar .btn-compact {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+/* Muted loading / empty copy */
+.page-hint {
+  text-align: center;
+  color: #888;
+}
+
+/* Full viewport while auth resolves (e.g. AdminRoute) */
+.route-guard-loader {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-gradient);
+}
+
+.route-guard-loader::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-left-color: var(--accent-red);
+  animation: route-guard-spin 1s linear infinite;
+}
+
+@keyframes route-guard-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  section {
+    padding: 60px 0;
+  }
+
+  .section-title {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .container {
+    padding: 0 15px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  section {
+    padding: 50px 0;
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+  }
+}

@@ -1,0 +1,33 @@
+/* Colors, spacing, fonts — change the look of the site here */
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  --primary-color: #e63946;
+  --primary-hover: #d62828;
+  --accent-red: #e63946;
+
+  --bg-color: #0a0a0a;
+  --bg-gradient: linear-gradient(180deg, #050505 0%, #0c101a 100%);
+  --bg-card: #12151e;
+  --bg-card-hover: #191e2b;
+  --border-color: rgba(255, 255, 255, 0.08);
+
+  --text-main: #ffffff;
+  --text-muted: #9ca3af;
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 10px 30px rgba(230, 57, 70, 0.15);
+
+  --font-heading: "Poppins", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --transition: all 0.3s ease;
+  --max-width: 1200px;
+}

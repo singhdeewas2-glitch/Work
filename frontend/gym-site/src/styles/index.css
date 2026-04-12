@@ -1,0 +1,13 @@
+/* App styles: load order matters — tokens first, then base, layout, shared UI, pages */
+@import "./variables.css";
+@import "./base.css";
+@import "./layout.css";
+@import "./components.css";
+@import "./pages/about.css";
+@import "./pages/contact.css";
+@import "./pages/auth.css";
+@import "./pages/profile.css";
+@import "./pages/diet-plan.css";
+@import "./pages/transformations.css";
+@import "./pages/admin-dashboard.css";
+@import "./pages/admin-transformations.css";

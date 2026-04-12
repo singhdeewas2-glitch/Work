@@ -1,0 +1,155 @@
+/*
+Button Component Styles
+Consistent button styling with variants and states
+*/
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 35px;
+  border-radius: 50px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-content {
+  transition: opacity 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff3b3b 0%, #d62828 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(230, 57, 70, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #fff;
+  border: 2px solid rgba(230, 57, 70, 0.8);
+  border-radius: 50px;
+}
+
+.btn-whatsapp {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-small {
+  padding: 8px 20px;
+  font-size: 0.875rem;
+}
+
+.btn-large {
+  padding: 18px 45px;
+  font-size: 1.125rem;
+}
+
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-loading {
+  cursor: wait;
+}
+
+.btn-loading .btn-content {
+  opacity: 0.7;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Hover effects */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(.btn-disabled):not(.btn-loading) {
+    background: linear-gradient(135deg, #ff4b5c 0%, #e63946 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(230, 57, 70, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-outline:hover:not(.btn-disabled):not(.btn-loading) {
+    background-color: rgba(230, 57, 70, 0.1);
+    border-color: #e63946;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(230, 57, 70, 0.3);
+  }
+
+  .btn-whatsapp:hover:not(.btn-disabled):not(.btn-loading) {
+    background: linear-gradient(135deg, #128c7e 0%, #075e54 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(37, 211, 102, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-danger:hover:not(.btn-disabled):not(.btn-loading) {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(239, 68, 68, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-success:hover:not(.btn-disabled):not(.btn-loading) {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Active state */
+.btn:active:not(.btn-disabled):not(.btn-loading) {
+  transform: scale(0.96) !important;
+  transition: 0.1s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 480px) {
+  .btn {
+    padding: 12px 25px;
+    font-size: 0.9rem;
+  }
+  
+  .btn-small {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .btn-large {
+    padding: 14px 35px;
+    font-size: 1rem;
+  }
+}

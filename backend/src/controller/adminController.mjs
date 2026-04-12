@@ -13,6 +13,15 @@ const router = express.Router();
 
 const uploadImage = upload.single('image');
 
+router.get('/members', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch members' });
+  }
+});
+
 // --- General Upload Service ---
 router.post('/upload', requireAdmin, (req, res, next) => {
   uploadImage(req, res, (err) => {
@@ -25,8 +34,10 @@ router.post('/upload', requireAdmin, (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    console.log('req.headers', req.headers);
-    console.log('req.file', req.file);
+    console.log("FORENSIC TRACE: /api/admin/upload hit")
+    console.log('HEADERS:', req.headers['content-type']);
+    console.log('FILE:', req.file);
+    console.log('BODY:', req.body);
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file received' });
@@ -38,7 +49,7 @@ router.post('/upload', requireAdmin, (req, res, next) => {
     res.json({ url: imageUrl });
   } catch (err) {
     console.error("S3 Upload Error:", err);
-    res.status(500).json({ error: 'S3 upload failed' });
+    res.status(500).json({ error: 'S3 upload failed: ' + err.message, stack: err.stack });
   }
 });
 
@@ -78,7 +89,7 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 
 // --- Trainers Management ---
 
-router.get('/trainers', async (req, res) => {
+router.get('/trainers', requireAdmin, async (req, res) => {
   try {
     const trainers = await Trainer.find({});
     res.json(trainers);
@@ -134,7 +145,7 @@ router.delete('/trainers/:id', requireAdmin, async (req, res) => {
 
 import Pricing from '../models/pricingModel.mjs';
 
-router.get('/prices', async (req, res) => {
+router.get('/prices', requireAdmin, async (req, res) => {
   try {
     const prices = await Pricing.find({});
     res.json(prices);
@@ -174,7 +185,7 @@ router.delete('/prices/:id', requireAdmin, async (req, res) => {
 // --- Content Management ---
 
 
-router.get('/content', async (req, res) => {
+router.get('/content', requireAdmin, async (req, res) => {
   try {
     const content = await Content.find({});
     res.json(content);
@@ -199,10 +210,22 @@ router.post('/content', requireAdmin, async (req, res) => {
 
 // --- Transformations Management ---
 
-router.get('/transformations', async (req, res) => {
+router.get('/transformations', requireAdmin, async (req, res) => {
   try {
-    const transformations = await Transformation.find({});
-    res.json(transformations);
+    const transformations = await Transformation.find({}).sort({ createdAt: -1 });
+    const hydrated = transformations.map((t) => {
+      const start = new Date(t.createdAt);
+      const end = new Date(t.updatedAt || t.createdAt);
+      const durationDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+      const progress = t.afterImage ? 100 : 0;
+      return {
+        ...t.toObject(),
+        progress,
+        duration: `${durationDays} days`
+      };
+    });
+    res.json(hydrated);
+
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch transformations' });
   }

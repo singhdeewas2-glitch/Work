@@ -20,7 +20,6 @@ export const uploadImageToS3 = async (file, token, folder = 'profiles') => {
     
     return imageUrl;
   } catch (err) {
-    console.error("Image upload failed:", err);
     throw err;
   }
 };

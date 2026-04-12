@@ -1,0 +1,138 @@
+/*
+Status Message Component Styles
+Consistent status message styling with variants and animations
+*/
+
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+  margin-bottom: 16px;
+}
+
+.status-message-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-message-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-message-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-message-info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-message-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.status-message-icon-success {
+  background: #10b981;
+  color: white;
+}
+
+.status-message-icon-success::before {
+  content: '!';
+}
+
+.status-message-icon-error {
+  background: #ef4444;
+  color: white;
+}
+
+.status-message-icon-error::before {
+  content: '!';
+}
+
+.status-message-icon-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.status-message-icon-warning::before {
+  content: '!';
+}
+
+.status-message-icon-info {
+  background: #3b82f6;
+  color: white;
+}
+
+.status-message-icon-info::before {
+  content: 'i';
+  font-style: italic;
+}
+
+.status-message-text {
+  flex: 1;
+}
+
+.status-message-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  font-family: monospace;
+}
+
+.status-message-close:hover {
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .status-message {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  
+  .status-message-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+}

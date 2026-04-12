@@ -1,6 +1,32 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+console.log("---- FORENSIC DEBUG INITIALIZATION ----");
+console.log("AWS KEY (AWS_ACCESS_KEY_ID):", process.env.AWS_ACCESS_KEY_ID ? `MASKED (${process.env.AWS_ACCESS_KEY_ID.substring(0, 4)}...)` : "undefined");
+console.log("AWS KEY (ACCESS_KEY):", process.env.ACCESS_KEY ? `MASKED (${process.env.ACCESS_KEY.substring(0, 4)}...)` : "undefined");
+console.log("AWS SECRET:", process.env.AWS_SECRET_ACCESS_KEY || process.env.SECRET_ACCESS_KEY ? "EXISTS" : "MISSING");
+console.log("AWS REGION:", process.env.AWS_REGION || process.env.REGION);
+
+import { S3Client, ListBucketsCommand } from "@aws-sdk/client-s3";
+const debugS3Client = new S3Client({
+  region: process.env.AWS_REGION || process.env.REGION,
+  credentials: {
+    // using the resolved configs to simulate actual connection
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.SECRET_ACCESS_KEY,
+  }
+});
+
+debugS3Client.send(new ListBucketsCommand({}))
+  .then((data) => {
+    console.log("S3 TEST SUCCESS: Successfully fetched bucket list.", data.Buckets?.map(b => b.Name));
+  })
+  .catch((err) => {
+    console.error("S3 TEST FAILED:");
+    console.error(err);
+  });
+console.log("---------------------------------------");
+
 import express from 'express';
 import cors from 'cors';
 import config from './config.mjs';
@@ -8,11 +34,12 @@ import mongoose from 'mongoose';
 import routes from './src/routes.mjs';
 import profileRoutes from './src/controller/profileController.mjs';
 import weightRoutes from './src/controller/weightController.mjs';
+import dietRoutes from './src/controller/dietController.mjs';
 
 const app = express();
 
 app.use(cors({ 
-  origin: ["http://localhost:5173", "http://localhost:5174"], 
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177"], 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"], 
   credentials: true 
@@ -27,6 +54,7 @@ app.get('/api/test', (req, res) => {
 app.use('/api', routes);
 app.use('/api', profileRoutes);
 app.use('/api/weight', weightRoutes);
+app.use('/api/diet', dietRoutes);
 
 import adminRoutes from './src/controller/adminController.mjs';
 app.use('/api/admin', adminRoutes);

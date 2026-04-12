@@ -1,0 +1,140 @@
+/* About page */
+.about-page .page-header {
+  background: linear-gradient(rgba(10, 10, 10, 0.8), rgba(10, 10, 10, 0.9)),
+    url("../../assets/gym15.jpg") center / cover;
+  padding: 120px 0 60px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.about-page .page-header h1 {
+  font-size: 3.5rem;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.about-page .page-header h1 span {
+  color: var(--primary-color);
+}
+
+.about-page .page-header p {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.about-inner {
+  padding: 80px 20px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.about-story h2 {
+  font-size: 2.5rem;
+  margin-bottom: 25px;
+}
+
+.about-story h2 span {
+  color: var(--primary-color);
+}
+
+.about-story p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+.about-image img {
+  border-radius: 10px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.about-trainers-block {
+  margin-top: 80px;
+  text-align: center;
+}
+
+.about-trainers-heading {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+}
+
+.about-trainers-heading span {
+  color: var(--primary-color);
+}
+
+.about-trainers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.about-trainer-card {
+  padding: 30px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.about-trainer-avatar-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #333;
+  margin: 0 auto 20px;
+}
+
+.about-trainer-card h3 {
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.about-trainer-card .trainer-title {
+  color: var(--primary-color);
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.about-trainer-card .trainer-bio {
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media screen and (max-width: 960px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-trainers-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes about-image-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(230, 57, 70, 0.3);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .about-image.reveal.active {
+    animation: about-image-float 4s ease-in-out infinite;
+  }
+}
