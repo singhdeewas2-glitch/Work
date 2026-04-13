@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Carousel from '../../components/Carousel/Carousel';
+import { dietService } from '../../services/dietService';
+import { uploadFileToServer } from '../../services/uploadService';
 
 const DietPlan = () => {
   const { session, dbUser, user } = useAuth();
@@ -32,7 +34,7 @@ const DietPlan = () => {
       const token = await getValidToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const response = await fetch('http://localhost:8080/api/diet', { headers });
+      const response = await dietService.getDiets(token);
       if (response.ok) {
         const data = await response.json();
         const grouped = { Breakfast: [], Lunch: [], Snacks: [], Dinner: [] };
@@ -65,21 +67,8 @@ const DietPlan = () => {
       setUploadingImage(true);
       const token = await getValidToken();
       
-      const uploadFormData = new FormData();
-      uploadFormData.append('image', file);
-      uploadFormData.append('folder', 'diets');
-
-      // Use the exact same upload API endpoint as Trainers and Transformations
-      const uploadRes = await fetch('http://localhost:8080/api/admin/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: uploadFormData
-      });
-
-      
-      if (!uploadRes.ok) throw new Error("Image upload failed");
-      
-      const uploadData = await uploadRes.json();
+      // Use the proper upload service instead of manual fetch
+      const uploadData = await uploadFileToServer(file, 'diets', token);
       
       setFormData(prev => ({ ...prev, image: uploadData.url }));
     } catch (err) {
@@ -98,20 +87,15 @@ const DietPlan = () => {
       const token = await getValidToken();
       if (!token) return;
 
-      const method = formData.id ? 'PUT' : 'POST';
-      const url = `http://localhost:8080/api/diet${formData.id ? `/${formData.id}` : ''}`;
-      
       const payload = { ...formData };
       if (payload.calories === '') payload.calories = null;
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      let response;
+      if (formData.id) {
+        response = await dietService.updateDiet(formData.id, payload, token);
+      } else {
+        response = await dietService.createDiet(payload, token);
+      }
 
       if (!response.ok) throw new Error('Failed to save diet plan');
       
@@ -144,10 +128,7 @@ const DietPlan = () => {
       const token = await getValidToken();
       if (!token) return;
 
-      const response = await fetch(`http://localhost:8080/api/diet/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await dietService.deleteDiet(id, token);
 
       if (response.ok) {
         setMessage('Diet plan deleted.');

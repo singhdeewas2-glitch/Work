@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { getJson } from '../../services/httpClient';
 
 /* Admin-only list of transformation records */
 const AdminTransformations = () => {
@@ -14,9 +15,7 @@ const AdminTransformations = () => {
     try {
       const s = await session();
       const token = s.getIdToken().getJwtToken();
-      const res = await fetch('http://localhost:8080/api/admin/transformations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await getJson('/admin/transformations', { token });
       if (!res.ok) throw new Error('Failed to fetch transformations');
       setItems(await res.json());
     } catch (err) {

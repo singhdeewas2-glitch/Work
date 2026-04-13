@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaTimes, FaPlus, FaSave, FaTrash } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { uploadFileToServer } from '../../services/uploadService';
 
 /* Admin modal: list items on the left, edit form on the right */
 const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onSave, onDelete }) => {
@@ -49,18 +50,7 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
       const imageField = schema.find(f => f.type === 'image');
 
       if (imageFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('image', imageFile);
-        uploadFormData.append('folder', 'admin_uploads');
-
-        const uploadRes = await fetch('http://localhost:8080/api/admin/upload', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: uploadFormData
-        });
-
-        if (!uploadRes.ok) throw new Error('Image upload failed');
-        const uploadData = await uploadRes.json();
+        const uploadData = await uploadFileToServer(imageFile, 'admin_uploads', token);
         finalImageUrl = uploadData.url;
       }
 

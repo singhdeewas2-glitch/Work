@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Carousel from '../../components/Carousel/Carousel';
 import { useAuth } from '../../context/AuthContext';
 import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
+import { trainerService } from '../../services/trainerService';
 import img1 from '../../assets/gym14.avif';
 import './Trainers.css';
 
@@ -42,7 +43,7 @@ const Trainers = () => {
 
   const fetchTrainers = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/trainers');
+      const response = await trainerService.getTrainers();
       if (response.ok) {
         const data = await response.json();
         setTrainersData(data);
@@ -55,19 +56,12 @@ const Trainers = () => {
   };
 
   const handleAdminSave = async (payload, id, token) => {
-    const method = id ? 'PUT' : 'POST';
-    const url = id
-      ? `http://localhost:8080/api/admin/trainers/${id}`
-      : 'http://localhost:8080/api/admin/trainers';
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
+    let res;
+    if (id) {
+      res = await trainerService.updateTrainer(id, payload, token);
+    } else {
+      res = await trainerService.createTrainer(payload, token);
+    }
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
@@ -77,10 +71,7 @@ const Trainers = () => {
   };
 
   const handleAdminDelete = async (id, token) => {
-    const res = await fetch(`http://localhost:8080/api/admin/trainers/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await trainerService.deleteTrainer(id, token);
     if (!res.ok) throw new Error('Failed to delete trainer');
     await fetchTrainers();
   };

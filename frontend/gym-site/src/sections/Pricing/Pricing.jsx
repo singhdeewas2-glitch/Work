@@ -3,6 +3,7 @@ import { FaCheck } from 'react-icons/fa';
 import Carousel from '../../components/Carousel/Carousel';
 import { useAuth } from '../../context/AuthContext';
 import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
+import { pricingService } from '../../services/pricingService';
 import { JoinPlanButton } from '../../components/UI/ContactButtons';
 import './Pricing.css';
 
@@ -67,7 +68,7 @@ const Pricing = () => {
 
   const fetchPrices = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/plans');
+      const response = await pricingService.getPlans();
       if (response.ok) {
         const data = await response.json();
         setPricingData(data);
@@ -80,29 +81,19 @@ const Pricing = () => {
   };
 
   const handleAdminSave = async (payload, id, token) => {
-    const method = id ? 'PUT' : 'POST';
-    const url = id
-      ? `http://localhost:8080/api/admin/prices/${id}`
-      : 'http://localhost:8080/api/admin/prices';
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
+    let res;
+    if (id) {
+      res = await pricingService.updatePlan(id, payload, token);
+    } else {
+      res = await pricingService.createPlan(payload, token);
+    }
 
     if (!res.ok) throw new Error('Failed to save plan');
     await fetchPrices();
   };
 
   const handleAdminDelete = async (id, token) => {
-    const res = await fetch(`http://localhost:8080/api/admin/prices/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await pricingService.deletePlan(id, token);
     if (!res.ok) throw new Error('Failed to delete plan');
     await fetchPrices();
   };

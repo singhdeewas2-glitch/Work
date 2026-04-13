@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
+import { transformationService } from '../../services/transformationService';
 
 import fallbackBefore from '../../assets/gym13.2.jpg';
 import fallbackAfter from '../../assets/gym13.1.jpg';
@@ -50,7 +51,7 @@ const Transformations = () => {
 
   const fetchTransformations = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/transformations');
+      const response = await transformationService.getTransformations();
       if (response.ok) {
         const transData = await response.json();
         setData(transData);
@@ -63,19 +64,12 @@ const Transformations = () => {
   };
 
   const handleAdminSave = async (payload, id, token) => {
-    const method = id ? 'PUT' : 'POST';
-    const url = id
-      ? `http://localhost:8080/api/admin/transformations/${id}`
-      : 'http://localhost:8080/api/admin/transformations';
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
+    let res;
+    if (id) {
+      res = await transformationService.updateTransformation(id, payload, token);
+    } else {
+      res = await transformationService.createTransformation(payload, token);
+    }
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
@@ -85,10 +79,7 @@ const Transformations = () => {
   };
 
   const handleAdminDelete = async (id, token) => {
-    const res = await fetch(`http://localhost:8080/api/admin/transformations/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await transformationService.deleteTransformation(id, token);
     if (!res.ok) throw new Error('Failed to delete transformation');
     await fetchTransformations();
   };

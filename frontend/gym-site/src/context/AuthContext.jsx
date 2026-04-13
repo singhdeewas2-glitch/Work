@@ -7,6 +7,7 @@ Provides signup, login, logout, and session management functionality
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { CognitoUserPool, CognitoUser, AuthenticationDetails, CognitoUserAttribute } from 'amazon-cognito-identity-js';
 import { userPoolId, clientId, validateCognitoConfig } from '../config/cognitoConfig';
+import { fetchProfile } from '../services/profileService';
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
@@ -62,16 +63,9 @@ export const AuthProvider = ({ children }) => {
 
   // Fetch user profile from database using JWT token
   const fetchDbProfile = async (token) => {
-    try {
-      const response = await fetch('http://localhost:8080/api/profile', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDbUser(data);
-      }
-    } catch (err) {
-      // Error fetching user profile data - will be handled by UI
+    const res = await fetchProfile(token);
+    if (res.ok) {
+      setDbUser(res.data);
     }
   };
 
