@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 
 const contentSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
-  value: { type: mongoose.Schema.Types.Mixed, required: true }
+  whatsapp: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  email: { type: String, default: '' },
+  address: { type: String, default: '' },
+  mapsLink: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model('Content', contentSchema);

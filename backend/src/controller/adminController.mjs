@@ -185,26 +185,33 @@ router.delete('/prices/:id', requireAdmin, async (req, res) => {
 // --- Content Management ---
 
 
-router.get('/content', requireAdmin, async (req, res) => {
+router.get('/config', requireAdmin, async (req, res) => {
   try {
-    const content = await Content.find({});
-    res.json(content);
+    const content = await Content.findOne({});
+    res.json(content || {});
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch content' });
+    res.status(500).json({ error: 'Failed to fetch config' });
   }
 });
 
-router.post('/content', requireAdmin, async (req, res) => {
+router.put('/config', requireAdmin, async (req, res) => {
   try {
-    const { key, value } = req.body;
-    const content = await Content.findOneAndUpdate(
-      { key },
-      { value },
-      { upsert: true, new: true }
-    );
+    const { whatsapp, phone, email, address, mapsLink } = req.body;
+    let content = await Content.findOne({});
+    if (!content) {
+      content = new Content({ whatsapp, phone, email, address, mapsLink });
+    } else {
+      content.whatsapp = whatsapp || '';
+      content.phone = phone || '';
+      content.email = email || '';
+      content.address = address || '';
+      content.mapsLink = mapsLink || '';
+    }
+    await content.save();
     res.json(content);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update content' });
+    console.error('Save Config Error:', err);
+    res.status(500).json({ error: 'Failed to update config' });
   }
 });
 

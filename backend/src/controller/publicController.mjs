@@ -34,3 +34,15 @@ export const getPlans = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch plans" });
   }
 };
+
+import Config from '../models/contentModel.mjs';
+
+export const getSiteConfig = async (req, res) => {
+  console.log("CONFIG API HIT");
+  try {
+    const config = await Config.findOne();
+    res.json(config || {});
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch site configuration" });
+  }
+};
