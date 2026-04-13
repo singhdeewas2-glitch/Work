@@ -4,9 +4,7 @@ import { requireAuth } from './middleware/authMiddleware.mjs';
 import { getTransformations, getTrainers, getPlans } from './controller/publicController.mjs';
 
 const router = express.Router();
-router.get("/", (req, res) => {
-    res.send("Hello World!");
-});
+router.get("/", (req, res) => {res.send("Hello World!")});
 router.post('/login', loginUser);
 router.post('/register', registerUser);
 router.get('/profile', requireAuth, getProfile);
