@@ -56,7 +56,7 @@ const AdminDashboard = () => {
         const data = await res.json();
         if (isMounted) setPrices(data || []);
       } else if (tab === 'configs') {
-        const res = await fetch(getApiUrl("/config"));
+        const res = await fetch(getApiUrl("/config"), { headers });
         if (!res.ok) throw new Error("Failed to fetch config");
         const data = await res.json();
         const resolvedData = data || {};

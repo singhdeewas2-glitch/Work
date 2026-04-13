@@ -38,7 +38,10 @@ export const getPlans = async (req, res) => {
 import Config from '../models/contentModel.mjs';
 
 export const getSiteConfig = async (req, res) => {
-  console.log("CONFIG API HIT");
-  const config = await Config.findOne();
-  res.json(config || {});
+  try {
+    const config = await Config.findOne();
+    res.json(config || {});
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch config' });
+  }
 };
