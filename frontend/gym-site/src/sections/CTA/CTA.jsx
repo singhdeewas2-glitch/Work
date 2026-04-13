@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { WhatsAppButton, CallButton } from '../../components/UI/ContactButtons';
-import './cta.css';
+import './CTA.css';
 
 /* Call-to-action before footer */
 const CTA = () => {
