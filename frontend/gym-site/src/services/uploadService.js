@@ -133,7 +133,7 @@ export function validateFile(file, options = {}) {
   }
   
   // Check image dimensions if it's an image
-  if (file.type.startsWith('image/')) {
+  if (file.type?.startsWith('image/')) {
     return new Promise((resolve) => {
       const img = new Image();
       

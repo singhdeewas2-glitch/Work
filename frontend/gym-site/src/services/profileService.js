@@ -65,7 +65,7 @@ export async function fetchProfile(token) {
       };
     }
 
-    const res = await getJson('/api/profile', { token });
+    const res = await getJson('/profile', { token });
     let data = {};
     
     try {
@@ -131,7 +131,7 @@ export async function updateProfile(token, payload) {
       };
     }
 
-    const res = await putJson('/api/profile', payload, { token });
+    const res = await putJson('/profile', payload, { token });
     let data = null;
     
     try {

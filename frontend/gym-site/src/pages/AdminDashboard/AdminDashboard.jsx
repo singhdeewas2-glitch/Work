@@ -7,17 +7,22 @@ Provides CRUD operations for gym management data
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl, handleApiError } from '../../config/apiConfig';
+import { contentService } from '../../services/contentService';
+import { useConfig } from '../../context/ConfigContext';
 const AdminDashboard = () => {
   const { session } = useAuth();
+  const { refreshConfig } = useConfig() || {};
   const [activeTab, setActiveTab] = useState('members');
   const [users, setUsers] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [prices, setPrices] = useState([]);
+  const [configs, setConfigs] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const [trainerForm, setTrainerForm] = useState({ id: null, name: '', specialty: '', experience: '', imageUrl: '' });
   const [priceForm, setPriceForm] = useState({ id: null, title: '', price: '', duration: '/month', features: '', isPopular: false });
+  const [configForm, setConfigForm] = useState({ whatsapp: '', phone: '', email: '', address: '', mapsLink: '' });
 
   const getAuthHeaders = useCallback(async (json = false) => {
     const s = await session();
@@ -34,39 +39,53 @@ const AdminDashboard = () => {
     
     try {
       const headers = await getAuthHeaders();
-      const apiUrl = getApiUrl();
 
       if (tab === 'members') {
-        const res = await fetch(`${apiUrl}/admin/members`, { headers });
+        const res = await fetch(getApiUrl('/admin/members'), { headers });
         if (!res.ok) throw new Error('Failed to load members');
         const data = await res.json();
-        if (isMounted) setUsers(data);
+        if (isMounted) setUsers(data || []);
       } else if (tab === 'trainers') {
-        const res = await fetch(`${apiUrl}/admin/trainers`, { headers });
+        const res = await fetch(getApiUrl('/admin/trainers'), { headers });
         if (!res.ok) throw new Error('Failed to load trainers');
         const data = await res.json();
-        if (isMounted) setTrainers(data);
+        if (isMounted) setTrainers(data || []);
       } else if (tab === 'pricing') {
-        const res = await fetch(`${apiUrl}/admin/prices`, { headers });
+        const res = await fetch(getApiUrl('/admin/prices'), { headers });
         if (!res.ok) throw new Error('Failed to load pricing');
         const data = await res.json();
-        if (isMounted) setPrices(data);
+        if (isMounted) setPrices(data || []);
+      } else if (tab === 'configs') {
+        const res = await fetch(getApiUrl("/config"));
+        if (!res.ok) throw new Error("Failed to fetch config");
+        const data = await res.json();
+        const resolvedData = data || {};
+        if (isMounted) {
+          setConfigs(resolvedData);
+          setConfigForm({
+            whatsapp: resolvedData.whatsapp || '',
+            phone: resolvedData.phone || '',
+            email: resolvedData.email || '',
+            address: resolvedData.address || '',
+            mapsLink: resolvedData.mapsLink || ''
+          });
+        }
       }
     } catch (e) {
       const errorResult = handleApiError(e);
       if (isMounted) {
         setError(errorResult.error);
         
-        // Set fallback data
+        // Use static arrays to prevent undefined error crashes
         if (tab === 'members') {
-          setUsers(errorResult.fallback.data || []);
+          setUsers([]);
         } else if (tab === 'trainers') {
-          setTrainers(errorResult.fallback.data || [
+          setTrainers([
             { id: 1, name: 'John Doe', specialty: 'Strength Training', experience: '5 years', imageUrl: '' },
             { id: 2, name: 'Jane Smith', specialty: 'Cardio', experience: '3 years', imageUrl: '' }
           ]);
         } else if (tab === 'pricing') {
-          setPrices(errorResult.fallback.data || [
+          setPrices([
             { id: 1, title: 'Basic Plan', price: '$29', duration: '/month', features: ['Gym Access', 'Basic Equipment'], isPopular: false },
             { id: 2, title: 'Premium Plan', price: '$49', duration: '/month', features: ['Gym Access', 'All Equipment', 'Personal Training'], isPopular: true }
           ]);
@@ -88,8 +107,7 @@ const AdminDashboard = () => {
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      const apiUrl = getApiUrl();
-      await fetch(`${apiUrl}/admin/users/${id}`, { method: 'DELETE', headers: await getAuthHeaders() });
+      await fetch(getApiUrl(`/admin/users/${id}`), { method: 'DELETE', headers: await getAuthHeaders() });
       setUsers(users.filter(u => u._id !== id));
     } catch (e) {
       // Error deleting user - handled silently
@@ -100,8 +118,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const method = trainerForm.id ? 'PUT' : 'POST';
-      const apiUrl = getApiUrl();
-      const url = trainerForm.id ? `${apiUrl}/admin/trainers/${trainerForm.id}` : `${apiUrl}/admin/trainers`;
+      const url = trainerForm.id ? getApiUrl(`/admin/trainers/${trainerForm.id}`) : getApiUrl(`/admin/trainers`);
       const res = await fetch(url, {
         method,
         headers: await getAuthHeaders(true),
@@ -124,8 +141,7 @@ const AdminDashboard = () => {
   const deleteTrainer = async (id) => {
     if (!window.confirm("Delete trainer?")) return;
     try {
-      const apiUrl = getApiUrl();
-      await fetch(`${apiUrl}/admin/trainers/${id}`, { method: 'DELETE', headers: await getAuthHeaders() });
+      await fetch(getApiUrl(`/admin/trainers/${id}`), { method: 'DELETE', headers: await getAuthHeaders() });
       setTrainers(trainers.filter(t => t._id !== id));
     } catch (e) {
       // Error deleting trainer - handled silently
@@ -136,8 +152,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const method = priceForm.id ? 'PUT' : 'POST';
-      const apiUrl = getApiUrl();
-      const url = priceForm.id ? `${apiUrl}/admin/prices/${priceForm.id}` : `${apiUrl}/admin/prices`;
+      const url = priceForm.id ? getApiUrl(`/admin/prices/${priceForm.id}`) : getApiUrl(`/admin/prices`);
       const payload = {
         ...priceForm,
         features: Array.isArray(priceForm.features) ? priceForm.features : priceForm.features.split(',').map(f => f.trim())
@@ -159,11 +174,38 @@ const AdminDashboard = () => {
   const deletePrice = async (id) => {
     if (!window.confirm("Delete rating plan?")) return;
     try {
-      const apiUrl = getApiUrl();
-      await fetch(`${apiUrl}/admin/prices/${id}`, { method: 'DELETE', headers: await getAuthHeaders() });
+      await fetch(getApiUrl(`/admin/prices/${id}`), { method: 'DELETE', headers: await getAuthHeaders() });
       setPrices(prices.filter(p => p._id !== id));
     } catch (e) {
       // Error deleting price - handled silently
+    }
+  };
+
+  const saveConfigs = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const s = await session();
+      const token = s.getIdToken().getJwtToken();
+      const res = await contentService.updateConfig(configForm, token);
+      if (!res.ok) {
+         let errMsg = 'Failed to save config';
+         try {
+           const errData = await res.json();
+           errMsg = errData.error || errData.message || errMsg;
+         } catch(err) {}
+         throw new Error(errMsg);
+      }
+      alert('Settings updated successfully');
+      
+      // Update global config instantly across the app without reloading
+      if (refreshConfig) await refreshConfig();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to update configurations.');
+      setError('Failed to save configurations.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -178,6 +220,7 @@ const AdminDashboard = () => {
           <button type="button" className={`adminTab${activeTab === 'members' ? ' active' : ''}`} onClick={() => setActiveTab('members')}>Members ({users.length || 0})</button>
           <button type="button" className={`adminTab${activeTab === 'trainers' ? ' active' : ''}`} onClick={() => setActiveTab('trainers')}>Trainers</button>
           <button type="button" className={`adminTab${activeTab === 'pricing' ? ' active' : ''}`} onClick={() => setActiveTab('pricing')}>Pricing</button>
+          <button type="button" className={`adminTab${activeTab === 'configs' ? ' active' : ''}`} onClick={() => setActiveTab('configs')}>Global Settings</button>
         </div>
 
         <div className="adminContent">
@@ -284,6 +327,39 @@ const AdminDashboard = () => {
                   ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>No pricing plans found</div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'configs' && (
+                <div className="adminPanelSection">
+                  <form className="adminForm" onSubmit={saveConfigs}>
+                    <h3>Global Platform Settings</h3>
+                    <div className="dashboardGrid" style={{ gap: '15px' }}>
+                      <div className="formGroup" style={{ gridColumn: 'span 6' }}>
+                        <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>WhatsApp Number</label>
+                        <input type="text" placeholder="+1234567890" value={configForm.whatsapp} onChange={e => setConfigForm({ ...configForm, whatsapp: e.target.value })} />
+                      </div>
+                      <div className="formGroup" style={{ gridColumn: 'span 6' }}>
+                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Contact Phone</label>
+                         <input type="text" placeholder="1-800-GYM" value={configForm.phone} onChange={e => setConfigForm({ ...configForm, phone: e.target.value })} />
+                      </div>
+                      <div className="formGroup" style={{ gridColumn: 'span 12' }}>
+                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Support Email</label>
+                         <input type="email" placeholder="support@gym.com" value={configForm.email} onChange={e => setConfigForm({ ...configForm, email: e.target.value })} />
+                      </div>
+                      <div className="formGroup" style={{ gridColumn: 'span 12' }}>
+                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Address</label>
+                         <textarea placeholder="123 Fitness Ave" value={configForm.address} onChange={e => setConfigForm({ ...configForm, address: e.target.value })} />
+                      </div>
+                      <div className="formGroup" style={{ gridColumn: 'span 12' }}>
+                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Google Map Link (iframe src)</label>
+                         <input type="text" placeholder="https://maps.google.com/..." value={configForm.mapsLink} onChange={e => setConfigForm({ ...configForm, mapsLink: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="formActions" style={{marginTop: '20px'}}>
+                      <button type="submit" className="btnPremium btnAdminSubmit" disabled={loading}>{loading ? "Saving..." : "Save Global Settings"}</button>
+                    </div>
+                  </form>
                 </div>
               )}
             </>

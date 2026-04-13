@@ -21,6 +21,7 @@ import AdminRoute from './components/AdminRoute/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
 import AdminTransformations from './pages/AdminTransformations/AdminTransformations';
 import { AuthProvider } from './context/AuthContext';
+import { ConfigProvider } from './context/ConfigContext';
 import { useLocation } from 'react-router-dom';
 
 function RouteObserver() {
@@ -54,33 +55,35 @@ function App() {
     <Router>
       <RouteObserver />
       <AuthProvider>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/success-stories" element={<SuccessStories />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/diet-plan" element={
-              <PrivateRoute>
-                <DietPlan />
-              </PrivateRoute>
-            } />
-            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } />
-            <Route path="/admin/transformations" element={
-              <AdminRoute>
-                <AdminTransformations />
-              </AdminRoute>
-            } />
-          </Route>
-        </Routes>
+        <ConfigProvider>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/success-stories" element={<SuccessStories />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/diet-plan" element={
+                <PrivateRoute>
+                  <DietPlan />
+                </PrivateRoute>
+              } />
+              <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/transformations" element={
+                <AdminRoute>
+                  <AdminTransformations />
+                </AdminRoute>
+              } />
+            </Route>
+          </Routes>
+        </ConfigProvider>
       </AuthProvider>
     </Router>
   );

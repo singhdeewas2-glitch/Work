@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api';
+import { getApiUrl } from '../config/apiConfig';
 
 /**
  * Low-level JSON fetch helpers. No UI concerns.
@@ -7,14 +7,14 @@ import { API_BASE_URL } from '../config/api';
 export async function getJson(path, { token, headers = {} } = {}) {
   const h = { ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE_URL}/api${path}`, { headers: h });
+  const res = await fetch(getApiUrl(path), { headers: h });
   return res;
 }
 
 export async function postJson(path, body, { token, headers = {} } = {}) {
   const h = { 'Content-Type': 'application/json', ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const res = await fetch(getApiUrl(path), {
     method: 'POST',
     headers: h,
     body: JSON.stringify(body),
@@ -25,7 +25,7 @@ export async function postJson(path, body, { token, headers = {} } = {}) {
 export async function putJson(path, body, { token, headers = {} } = {}) {
   const h = { 'Content-Type': 'application/json', ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const res = await fetch(getApiUrl(path), {
     method: 'PUT',
     headers: h,
     body: JSON.stringify(body),
@@ -36,7 +36,7 @@ export async function putJson(path, body, { token, headers = {} } = {}) {
 export async function deleteJson(path, { token, headers = {} } = {}) {
   const h = { ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const res = await fetch(getApiUrl(path), {
     method: 'DELETE',
     headers: h,
   });
@@ -47,7 +47,7 @@ export async function uploadFile(path, formData, { token, headers = {} } = {}) {
   const h = { ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
   // Don't set Content-Type for FormData - browser sets it with boundary
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const res = await fetch(getApiUrl(path), {
     method: 'POST',
     headers: h,
     body: formData,

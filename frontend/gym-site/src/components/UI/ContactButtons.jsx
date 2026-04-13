@@ -6,14 +6,18 @@ Uses centralized contact configuration
 
 import React from 'react';
 import { FaWhatsapp, FaPhone } from 'react-icons/fa';
-import { getWhatsAppLink, getCallLink, getPlanWhatsAppLink } from '../../contact/WhatsApp';
+
+import { useConfig } from '../../context/ConfigContext';
 
 /**
  * WhatsApp Button Component
  * Opens WhatsApp chat with default or custom message
  */
 export const WhatsAppButton = ({ message = null, children = "WhatsApp Us", className = "" }) => {
-  const whatsappUrl = message ? getWhatsAppLink(message) : getWhatsAppLink();
+  const { config } = useConfig();
+  const number = config?.whatsapp || '';
+  const defaultMessage = message || "Hello!";
+  const whatsappUrl = `https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(defaultMessage)}`;
   
   return (
     <a 
@@ -32,9 +36,11 @@ export const WhatsAppButton = ({ message = null, children = "WhatsApp Us", class
  * Opens phone dialer
  */
 export const CallButton = ({ children = "Call Us", className = "" }) => {
+  const { config } = useConfig();
+  const phone = config?.phone || '';
   return (
     <a 
-      href={getCallLink()}
+      href={`tel:${phone}`}
       className={`btn btn-outline ${className}`}
     >
       <FaPhone size={16} /> {children}
@@ -47,7 +53,10 @@ export const CallButton = ({ children = "Call Us", className = "" }) => {
  * Opens WhatsApp with plan-specific message
  */
 export const JoinPlanButton = ({ planType, planTitle, className = "" }) => {
-  const whatsappUrl = getPlanWhatsAppLink(planType);
+  const { config } = useConfig();
+  const number = config?.whatsapp || '';
+  const planMessage = "I am interested in joining the " + (planType || planTitle) + " plan.";
+  const whatsappUrl = `https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(planMessage)}`;
   
   return (
     <a 

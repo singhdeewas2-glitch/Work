@@ -8,7 +8,7 @@ Used by useWeightChartData hook for weight progress visualization
 import { getJson } from './httpClient';
 
 export async function fetchWeightSeries(token, timeView) {
-  const res = await getJson(`/api/weight/${timeView}`, { token });
+  const res = await getJson(`/weight/${timeView}`, { token });
   if (!res.ok) return null;
   try {
     return await res.json();

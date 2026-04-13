@@ -1,10 +1,14 @@
 import React from 'react';
 import { WhatsAppButton, CallButton } from '../../components/UI/ContactButtons';
-import { contactConfig, getMapEmbedUrl, getMapLink } from '../../contact/WhatsApp';
+import { useConfig } from '../../context/ConfigContext';
 import './Location.css';
 
 /* Address, hours, map embed */
 const Location = () => {
+  const { config } = useConfig();
+  const address = config?.address || '';
+  const mapLink = config?.mapsLink || '';
+
   return (
     <section className="location-block" id="contact">
       <div className="container">
@@ -21,9 +25,9 @@ const Location = () => {
             <div className="location-details">
               <div className="location-detail-block">
                 <h4>Address</h4>
-                <p>{contactConfig.location.address}</p>
+                <p>{address}</p>
                 <a
-                  href={getMapLink()}
+                  href={mapLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="location-maps-link"
@@ -33,15 +37,15 @@ const Location = () => {
               </div>
               <div className="location-detail-block">
                 <h4>Business Hours</h4>
-                <p>{contactConfig.hours.weekdays}</p>
-                <p>{contactConfig.hours.weekends}</p>
+                <p>Mon - Sat: 6:00 AM - 10:00 PM</p>
+                <p>Sunday: Closed</p>
               </div>
             </div>
           </div>
 
           <div className="location-map-frame">
             <iframe
-              src={getMapEmbedUrl()}
+              src={mapLink}
               width="100%"
               height="100%"
               style={{ border: 0 }}
