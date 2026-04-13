@@ -29,5 +29,5 @@
   --font-heading: "Poppins", sans-serif;
   --font-body: "Inter", sans-serif;
   --transition: all 0.3s ease;
-  --max-width: 1200px;
+  --max-width: 100%;
 }
