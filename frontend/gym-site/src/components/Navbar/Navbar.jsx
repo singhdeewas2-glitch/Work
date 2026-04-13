@@ -11,6 +11,9 @@ import { FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 const Navbar = () => {
   const { user, dbUser } = useAuth();
+  const groups = user?.signInUserSession?.accessToken?.payload?.["cognito:groups"];
+  console.log("Navbar groups:", groups);
+  const isAdmin = groups?.includes("admins") || dbUser?.role === 'admin';
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -74,7 +77,7 @@ const Navbar = () => {
               <li>
                 <Link to="/diet-plan" onClick={() => setIsOpen(false)}>Diet Plan</Link>
               </li>
-              {dbUser?.role === 'admin' && (
+              {isAdmin && (
                 <li>
                   <Link to="/admin" className="btn btn-outline nav-cta-button" onClick={() => setIsOpen(false)}>
                     Admin

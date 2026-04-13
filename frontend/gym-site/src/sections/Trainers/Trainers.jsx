@@ -24,8 +24,10 @@ const Trainers = () => {
   const [loading, setLoading] = useState(true);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const { dbUser } = useAuth();
-  const isAdmin = dbUser?.role === 'admin';
+  const { user, dbUser } = useAuth();
+  const groups = user?.signInUserSession?.accessToken?.payload?.["cognito:groups"];
+  console.log("Trainers groups:", groups);
+  const isAdmin = groups?.includes("admins") || dbUser?.role === 'admin';
 
   const schema = [
     { key: 'name', label: 'Trainer Name', type: 'text', required: true },

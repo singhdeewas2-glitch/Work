@@ -9,7 +9,11 @@ const AdminRoute = ({ children }) => {
     return <div className="route-guard-loader" aria-busy="true" />;
   }
 
-  if (!user || !dbUser || dbUser.role !== 'admin') {
+  const groups = user?.signInUserSession?.accessToken?.payload?.["cognito:groups"];
+  console.log("AdminRoute groups:", groups);
+  const isAdmin = groups?.includes("admins") || dbUser?.role === 'admin';
+
+  if (!user || !isAdmin) {
     return <Navigate to="/" />;
   }
 

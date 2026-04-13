@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Carousel from '../../components/Carousel/Carousel';
 
 const DietPlan = () => {
-  const { session, dbUser } = useAuth();
+  const { session, dbUser, user } = useAuth();
   const [diets, setDiets] = useState({ Breakfast: [], Lunch: [], Snacks: [], Dinner: [] });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -13,7 +13,9 @@ const DietPlan = () => {
   const [formData, setFormData] = useState({ id: null, mealType: 'Breakfast', items: '', calories: '', notes: '', image: '' });
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const isAdmin = dbUser?.role === 'admin';
+  const groups = user?.signInUserSession?.accessToken?.payload?.["cognito:groups"];
+  console.log("DietPlan groups:", groups);
+  const isAdmin = groups?.includes("admins") || dbUser?.role === 'admin';
 
   const getValidToken = useCallback(async () => {
     try {

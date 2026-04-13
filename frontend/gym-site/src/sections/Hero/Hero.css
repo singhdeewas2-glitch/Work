@@ -68,6 +68,7 @@
 
 .home-hero-title {
   font-family: var(--font-heading), "Poppins", sans-serif;
+
   font-weight: 900;
   line-height: 1.1;
   margin-bottom: 24px;
@@ -85,7 +86,7 @@
   font-size: 4.4rem;
   color: #f1f5f9;
   display: block;
-  margin-top: -32px;
+  margin-top: 10px;
   margin-bottom: -15px;
   font-weight: 600;
 }
