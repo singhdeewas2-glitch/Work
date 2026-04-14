@@ -14,3 +14,4 @@ router.get("/trainers", getTrainers);
 router.get("/plans", getPlans);
 router.get("/config", getSiteConfig);
 export default router;
+
