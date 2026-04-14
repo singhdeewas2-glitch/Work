@@ -352,7 +352,7 @@ const AdminDashboard = () => {
                          <textarea placeholder="123 Fitness Ave" value={configForm.address} onChange={e => setConfigForm({ ...configForm, address: e.target.value })} />
                       </div>
                       <div className="formGroup" style={{ gridColumn: 'span 12' }}>
-                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Google Map Link (iframe src)</label>
+                         <label style={{color: '#888', marginBottom: '5px', display: 'block'}}>Gym Location (paste any Google Maps link or type address)</label>
                          <input type="text" placeholder="https://maps.google.com/..." value={configForm.mapsLink} onChange={e => setConfigForm({ ...configForm, mapsLink: e.target.value })} />
                       </div>
                     </div>
