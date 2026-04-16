@@ -6,9 +6,19 @@ Provides CRUD operations for gym management data
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getApiUrl, handleApiError } from '../../config/apiConfig';
+import { getApiUrl, API_BASE_URL, handleApiError } from '../../config/apiConfig';
 import { contentService } from '../../services/contentService';
 import { useConfig } from '../../context/ConfigContext';
+import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
+import { trainerService } from '../../services/trainerService';
+import { pricingService } from '../../services/pricingService';
+
+const resolveImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
+};
+
 const AdminDashboard = () => {
   const { session } = useAuth();
   const { refreshConfig } = useConfig() || {};
@@ -23,6 +33,65 @@ const AdminDashboard = () => {
   const [trainerForm, setTrainerForm] = useState({ id: null, name: '', specialty: '', experience: '', imageUrl: '' });
   const [priceForm, setPriceForm] = useState({ id: null, title: '', price: '', duration: '/month', features: '', isPopular: false });
   const [configForm, setConfigForm] = useState({ whatsapp: '', phone: '', email: '', address: '', mapsLink: '' });
+  const [isTrainerEditorOpen, setIsTrainerEditorOpen] = useState(false);
+  const [isPricingEditorOpen, setIsPricingEditorOpen] = useState(false);
+
+  const trainerSchema = [
+    { key: 'name', label: 'Trainer Name', type: 'text', required: true },
+    { key: 'specialty', label: 'Specialty/Role', type: 'text', required: true },
+    { key: 'experience', label: 'Experience (e.g. 5 Years)', type: 'text' },
+    { key: 'image', label: 'Trainer Image', type: 'image', required: true },
+  ];
+
+  const handleTrainerSave = async (payload, id, token) => {
+    let res;
+    if (id) {
+      res = await trainerService.updateTrainer(id, payload, token);
+    } else {
+      res = await trainerService.createTrainer(payload, token);
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to save trainer');
+    }
+    await fetchData('trainers');
+  };
+
+  const handleTrainerDelete = async (id, token) => {
+    const res = await trainerService.deleteTrainer(id, token);
+    if (!res.ok) throw new Error('Failed to delete trainer');
+    await fetchData('trainers');
+  };
+
+  const pricingSchema = [
+    { key: 'title', label: 'Plan Title', type: 'text', required: true },
+    { key: 'price', label: 'Price (e.g. $50)', type: 'text', required: true },
+    { key: 'duration', label: 'Duration (e.g. /month)', type: 'text', default: '/month' },
+    { key: 'features', label: 'Features', type: 'array' },
+    { key: 'isPopular', label: 'Mark as Most Popular', type: 'boolean' },
+  ];
+
+  const handlePricingSave = async (payload, id, token) => {
+    let res;
+    if (id) {
+      res = await pricingService.updatePlan(id, payload, token);
+    } else {
+      res = await pricingService.createPlan(payload, token);
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to save plan');
+    }
+    await fetchData('pricing');
+  };
+
+  const handlePricingDelete = async (id, token) => {
+    const res = await pricingService.deletePlan(id, token);
+    if (!res.ok) throw new Error('Failed to delete plan');
+    await fetchData('pricing');
+  };
 
   const getAuthHeaders = useCallback(async (json = false) => {
     const s = await session();
@@ -114,30 +183,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const saveTrainer = async (e) => {
-    e.preventDefault();
-    try {
-      const method = trainerForm.id ? 'PUT' : 'POST';
-      const url = trainerForm.id ? getApiUrl(`/admin/trainers/${trainerForm.id}`) : getApiUrl(`/admin/trainers`);
-      const res = await fetch(url, {
-        method,
-        headers: await getAuthHeaders(true),
-        body: JSON.stringify({
-          name: trainerForm.name,
-          role: trainerForm.specialty,
-          experience: trainerForm.experience,
-          imageUrl: trainerForm.imageUrl
-        })
-      });
-      if (res.ok) {
-        setTrainerForm({ id: null, name: '', specialty: '', experience: '', imageUrl: '' });
-        fetchData('trainers');
-      }
-    } catch (e) {
-      // Error saving trainer - handled silently
-    }
-  };
-
+  
   const deleteTrainer = async (id) => {
     if (!window.confirm("Delete trainer?")) return;
     try {
@@ -231,25 +277,27 @@ const AdminDashboard = () => {
           ) : (
             <>
               {activeTab === 'members' && (
-                <div className="adminPanelSection tableResponsive">
+                <div className="adminPanelSection">
                   <div className="adminHeaderActions">
                     <h3>Gym Members</h3>
                   </div>
                   {users.length ? (
-                    <table className="adminTable">
-                      <thead>
-                        <tr><th>Email</th><th>Name</th><th>Role</th><th>Actions</th></tr>
-                      </thead>
-                      <tbody>
-                        {users.map(u => (
-                          <tr key={u._id}>
-                            <td>{u.email}</td><td>{u.name || '-'}</td>
-                            <td><span className={`roleBadge ${u.role}`}>{u.role}</span></td>
-                            <td><button type="button" className="btnDanger" onClick={() => deleteUser(u._id)}>Remove</button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="tableResponsive">
+                      <table className="adminTable">
+                        <thead>
+                          <tr><th>Email</th><th>Name</th><th>Role</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                          {users.map(u => (
+                            <tr key={u._id}>
+                              <td>{u.email}</td><td>{u.name || '-'}</td>
+                              <td><span className={`roleBadge ${u.role}`}>{u.role}</span></td>
+                              <td><button type="button" className="btnDanger" onClick={() => deleteUser(u._id)}>Remove</button></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>No members found</div>
                   )}
@@ -258,33 +306,33 @@ const AdminDashboard = () => {
 
               {activeTab === 'trainers' && (
                 <div className="adminPanelSection">
-                  <form className="adminForm" onSubmit={saveTrainer}>
-                    <h3>{trainerForm.id ? 'Edit Trainer Profile' : 'Onboard New Trainer'}</h3>
-                    <div className="formGroup"><input type="text" placeholder="Full Name" required value={trainerForm.name} onChange={e => setTrainerForm({ ...trainerForm, name: e.target.value })} /></div>
-                    <div className="formGroup"><input type="text" placeholder="Specialty (e.g. CrossFit, Powerlifting)" required value={trainerForm.specialty} onChange={e => setTrainerForm({ ...trainerForm, specialty: e.target.value })} /></div>
-                    <div className="formGroup"><input type="text" placeholder="Experience (e.g. 5+ Years)" value={trainerForm.experience} onChange={e => setTrainerForm({ ...trainerForm, experience: e.target.value })} /></div>
-                    <div className="formGroup"><input type="text" placeholder="High-Res Image URL" required value={trainerForm.imageUrl} onChange={e => setTrainerForm({ ...trainerForm, imageUrl: e.target.value })} /></div>
-                    <div className="formActions">
-                      <button type="submit" className="btnPremium btnAdminSubmit">{trainerForm.id ? 'Update Profile' : 'Publish Trainer'}</button>
-                      {trainerForm.id && <button type="button" className="btnAdminCancel" onClick={() => setTrainerForm({ id: null, name: '', specialty: '', experience: '', imageUrl: '' })}>Cancel</button>}
-                    </div>
-                  </form>
+                  <div className="adminHeaderActions">
+                    <h3>Trainer Management</h3>
+                    <button type="button" className="btnPremium" onClick={() => setIsTrainerEditorOpen(true)}>
+                      Add New Trainer
+                    </button>
+                  </div>
                   {trainers.length ? (
-                    <table className="adminTable">
-                      <thead><tr><th>Display</th><th>Instructor</th><th>Specialty</th><th>Actions</th></tr></thead>
-                      <tbody>
-                        {trainers.map(t => (
-                          <tr key={t._id}>
-                            <td><img src={t.image || t.imageUrl} alt={t.name} style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #333' }} /></td>
-                            <td style={{ fontWeight: '600', color: '#fff' }}>{t.name}</td><td style={{ color: '#888' }}>{t.role || t.specialty}</td>
-                            <td>
-                              <button type="button" className="btnEdit" onClick={() => setTrainerForm({ id: t._id, name: t.name, specialty: t.role || t.specialty || '', experience: t.experience || '', imageUrl: t.image || t.imageUrl || '' })}>Config</button>
-                              <button type="button" className="btnDanger" onClick={() => deleteTrainer(t._id)}>Revoke</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="tableResponsive">
+                      <table className="adminTable">
+                        <thead><tr><th>Display</th><th>Instructor</th><th>Specialty</th><th>Actions</th></tr></thead>
+                        <tbody>
+                          {trainers.map(t => (
+                            <tr key={t._id}>
+                              <td><img src={resolveImageUrl(t.image || t.imageUrl)} alt={t.name} style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #333' }} /></td>
+                              <td style={{ fontWeight: '600', color: '#fff' }}>{t.name}</td><td style={{ color: '#888' }}>{t.role || t.specialty}</td>
+                              <td>
+                                <button type="button" className="btnEdit" onClick={() => {
+                                  setTrainerForm({ id: t._id, name: t.name, specialty: t.role || t.specialty || '', experience: t.experience || '', image: t.image || t.imageUrl || '' });
+                                  setIsTrainerEditorOpen(true);
+                                }}>Config</button>
+                                <button type="button" className="btnDanger" onClick={() => deleteTrainer(t._id)}>Revoke</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>No trainers found</div>
                   )}
@@ -293,39 +341,34 @@ const AdminDashboard = () => {
 
               {activeTab === 'pricing' && (
                 <div className="adminPanelSection">
-                  <form className="adminForm" onSubmit={savePrice}>
-                    <h3>{priceForm.id ? 'Edit Rate Plan' : 'Define New Strategy'}</h3>
-                    <div className="dashboardGrid" style={{ gap: '15px' }}>
-                      <div className="formGroup" style={{ gridColumn: 'span 6' }}><input type="text" placeholder="Tier Name (e.g. Elite Alpha)" required value={priceForm.title} onChange={e => setPriceForm({ ...priceForm, title: e.target.value })} /></div>
-                      <div className="formGroup" style={{ gridColumn: 'span 6' }}><input type="text" placeholder="Price (e.g. $149)" required value={priceForm.price} onChange={e => setPriceForm({ ...priceForm, price: e.target.value })} /></div>
-                      <div className="formGroup" style={{ gridColumn: 'span 12' }}><input type="text" placeholder="Billing Cycle (e.g. /month)" value={priceForm.duration} onChange={e => setPriceForm({ ...priceForm, duration: e.target.value })} /></div>
-                      <div className="formGroup" style={{ gridColumn: 'span 12' }}><textarea placeholder="Offerings (comma separated: Unlimited Access, PT Sessions)" required value={typeof priceForm.features === 'string' ? priceForm.features : priceForm.features.join(', ')} onChange={e => setPriceForm({ ...priceForm, features: e.target.value })} /></div>
-                      <div className="formGroup checkbox" style={{ gridColumn: 'span 12' }}>
-                        <label><input type="checkbox" checked={priceForm.isPopular} onChange={e => setPriceForm({ ...priceForm, isPopular: e.target.checked })} /> Highlight as Highest Converter (Most Popular)</label>
-                      </div>
-                    </div>
-                    <div className="formActions">
-                      <button type="submit" className="btnPremium btnAdminSubmit">{priceForm.id ? 'Sync Edits' : 'Deploy Pricing'}</button>
-                      {priceForm.id && <button type="button" className="btnAdminCancel" onClick={() => setPriceForm({ id: null, title: '', price: '', duration: '/month', features: '', isPopular: false })}>Discard</button>}
-                    </div>
-                  </form>
+                  <div className="adminHeaderActions">
+                    <h3>Pricing Plans Management</h3>
+                    <button type="button" className="btnPremium" onClick={() => setIsPricingEditorOpen(true)}>
+                      Add New Plan
+                    </button>
+                  </div>
                   {prices.length ? (
-                    <table className="adminTable">
-                      <thead><tr><th>Plan Strategy</th><th>Revenue Tier</th><th>Conversion Highlight</th><th>Actions</th></tr></thead>
-                      <tbody>
-                        {prices.map(p => (
+                    <div className="tableResponsive">
+                      <table className="adminTable">
+                        <thead><tr><th>Plan Strategy</th><th>Revenue Tier</th><th>Conversion Highlight</th><th>Actions</th></tr></thead>
+                        <tbody>
+                          {prices.map(p => (
                           <tr key={p._id}>
                             <td style={{ fontWeight: '600', color: '#fff' }}>{p.title}</td><td style={{ color: '#10b981' }}>{p.price} <span style={{ color: '#888', fontSize: '0.8rem' }}>{p.duration}</span></td><td>{p.isPopular ? <span style={{ color: '#E63946', fontWeight: 'bold' }}>Active Focus</span> : <span style={{ color: '#444' }}>Standard</span>}</td>
                             <td>
-                              <button type="button" className="btnEdit" onClick={() => setPriceForm({ id: p._id, title: p.title, price: p.price, duration: p.duration, features: p.features.join(', '), isPopular: p.isPopular })}>Config</button>
-                              <button type="button" className="btnDanger" onClick={() => deletePrice(p._id)}>Delist</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              <button type="button" className="btnEdit" onClick={() => {
+                              setPriceForm({ id: p._id, title: p.title, price: p.price, duration: p.duration, features: p.features, isPopular: p.isPopular });
+                              setIsPricingEditorOpen(true);
+                            }}>Config</button>
+                                <button type="button" className="btnDanger" onClick={() => deletePrice(p._id)}>Revoke</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
-                    <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>No pricing plans found</div>
+                    <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>No pricing plans active</div>
                   )}
                 </div>
               )}
@@ -366,6 +409,34 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      <AdminEditorModal
+        title="Trainers"
+        isOpen={isTrainerEditorOpen}
+        onClose={() => {
+          setIsTrainerEditorOpen(false);
+          setTrainerForm({ id: null, name: '', specialty: '', experience: '', image: '' });
+        }}
+        items={trainers}
+        schema={trainerSchema}
+        onSave={handleTrainerSave}
+        onDelete={handleTrainerDelete}
+        initialFormData={trainerForm}
+      />
+
+      <AdminEditorModal
+        title="Pricing Plans"
+        isOpen={isPricingEditorOpen}
+        onClose={() => {
+          setIsPricingEditorOpen(false);
+          setPriceForm({ id: null, title: '', price: '', duration: '/month', features: '', isPopular: false });
+        }}
+        items={prices}
+        schema={pricingSchema}
+        onSave={handlePricingSave}
+        onDelete={handlePricingDelete}
+        initialFormData={priceForm}
+      />
     </div>
   );
 };

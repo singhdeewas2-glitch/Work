@@ -65,20 +65,20 @@ const Pricing = () => {
   useEffect(() => {
     fetchPrices();
   }, []);
+console.log("FETCH START");
+ const fetchPrices = async () => {
+  try {
+    const response = await pricingService.getPlans();
 
-  const fetchPrices = async () => {
-    try {
-      const response = await pricingService.getPlans();
-      if (response.ok) {
-        const data = await response.json();
-        setPricingData(data);
-      }
-    } catch (err) {
-      // Pricing fetch error - handled by UI state
-    } finally {
-      setLoading(false);
+    if (response.ok) {
+      const data = await response.json();
+      setPricingData(data);
     }
-  };
+  } catch (err) {
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAdminSave = async (payload, id, token) => {
     let res;

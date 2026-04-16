@@ -45,3 +45,20 @@ export const getSiteConfig = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch config' });
   }
 };
+
+export const resolveMapUrl = async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.json({ url: '' });
+
+  try {
+    // We fetch the URL. If it's a maps.app.goo.gl link, default node fetch follows up to 20 redirects natively!
+    const fetchMod = (await import('node-fetch')).default || global.fetch;
+    const response = await fetchMod(url, { redirect: 'follow' });
+    
+    // We send back the heavily expanded final Google Maps desktop/mobile URL
+    res.json({ url: response.url });
+  } catch (error) {
+    // If blocked or failed, fallback to original.
+    res.json({ url: url });
+  }
+};

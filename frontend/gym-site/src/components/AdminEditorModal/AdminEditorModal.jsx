@@ -1,23 +1,39 @@
 import React, { useState } from 'react';
 import { FaTimes, FaPlus, FaSave, FaTrash } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { uploadFileToServer } from '../../services/uploadService';
+import { API_BASE_URL } from '../../config/apiConfig';
 
-/* Admin modal: list items on the left, edit form on the right */
-const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onSave, onDelete }) => {
+// Fix relative image URLs to include backend base URL
+const resolveImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
+
+const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onSave, onDelete, initialFormData }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({});
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState({}); // key -> File object (supports multiple image fields)
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const { session } = useAuth();
+  const { user } = useAuth();
+  React.useEffect(() => {
+    if (initialFormData && isOpen) {
+      setSelectedItem(initialFormData);
+      setFormData({ ...initialFormData });
+      setImageFiles({});
+      setErrorMsg(null);
+    }
+  }, [initialFormData, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSelect = (item) => {
     setSelectedItem(item);
     setFormData({ ...item });
-    setImageFile(null);
+    setImageFiles({});
     setErrorMsg(null);
   };
 
@@ -33,42 +49,72 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  const submitForm = async () => {
+  const handleImageChange = (key, file) => {
+    setImageFiles(prev => ({ ...prev, [key]: file }));
+  };
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    
+    console.log("=== SUBMIT FUNCTION CALLED ===");
+    
+    if (isSubmitting) {
+      console.log(" SUBMIT LOCKED: Already submitting, preventing duplicate");
+      return;
+    }
+    
+    setIsSubmitting(true);
     setErrorMsg(null);
+    const token = user?.signInUserSession?.idToken?.jwtToken;
+    console.log("TOKEN SENT:", token);
+    
+    // Validate required non-image fields
     for (const field of schema.filter(f => f.required && f.type !== 'image')) {
       if (!formData[field.key] || formData[field.key].toString().trim() === '') {
+        setIsSubmitting(false);
         return setErrorMsg(`${field.label} is required.`);
       }
     }
 
+    // Validate required image fields for new items
+    for (const field of schema.filter(f => f.required && f.type === 'image')) {
+      if (!selectedItem._id && !imageFiles[field.key] && !formData[field.key]) {
+        setIsSubmitting(false);
+        return setErrorMsg(`${field.label} is required.`);
+      }
+    }
+    
     setLoading(true);
+    
     try {
+      console.log("=== SUBMIT STARTING ===");
       const userSession = await session();
       const token = userSession.getIdToken().getJwtToken();
-      let finalImageUrl = formData.image;
-
-      const imageField = schema.find(f => f.type === 'image');
-
-      if (imageFile) {
-        const uploadData = await uploadFileToServer(imageFile, 'admin_uploads', token);
-        finalImageUrl = uploadData.url;
-      }
-
-      if (imageField && imageField.required && !finalImageUrl && !formData._id) {
-        throw new Error(`${imageField.label} upload is strictly required.`);
-      }
 
       const finalPayload = { ...formData };
-      if (imageField) {
-        finalPayload[imageField.key] = finalImageUrl;
-      }
 
-      await onSave(finalPayload, selectedItem._id, token);
+      // Handle all image fields
+      for (const field of schema.filter(f => f.type === 'image')) {
+        if (imageFiles[field.key]) {
+          console.log("Including new image file in payload:", field.key, imageFiles[field.key].name);
+          finalPayload[field.key] = imageFiles[field.key]; // File object
+        } else if (formData[field.key]) {
+          finalPayload[field.key] = formData[field.key]; // Keep existing URL
+        }
+      }
+      
+      console.log("Final payload for save:", finalPayload);
+      await onSave(finalPayload, selectedItem?._id, token);
+      console.log("=== SUBMIT SUCCESSFUL ===");
       setSelectedItem(null);
+      setImageFiles({});
     } catch (err) {
+      console.error("AdminEditorModal submit error:", err);
       setErrorMsg(err.message || 'Error saving data.');
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
+      console.log("=== SUBMIT COMPLETED ===");
     }
   };
 
@@ -95,7 +141,9 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleSelect(item)}
                 >
-                  <span className="admin-modal-item-name">{item[schema.find(f => f.type === 'text' || f.type === 'string')?.key] || 'Unnamed Item'}</span>
+                  <span className="admin-modal-item-name">
+                    {item[schema.find(f => f.type === 'text' || f.type === 'string')?.key] || 'Unnamed Item'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -112,18 +160,32 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
                 <div className="admin-modal-form-grid">
                   {schema.map(field => {
                     if (field.type === 'image') {
+                      const existingUrl = resolveImageUrl(formData[field.key]);
+                      const previewFile = imageFiles[field.key];
+                      const previewUrl = previewFile ? URL.createObjectURL(previewFile) : existingUrl;
+
                       return (
                         <div key={field.key} className="admin-modal-field admin-modal-field--full">
                           <label>{field.label} {field.required && '*'}</label>
                           <div className="admin-modal-image-row">
-                            {formData[field.key] && !imageFile && (
-                              <img src={formData[field.key]} alt="Preview" className="admin-modal-image-preview" />
+                            {previewUrl && (
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                className="admin-modal-image-preview"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
                             )}
-                            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageChange(field.key, e.target.files[0])}
+                            />
                           </div>
                         </div>
                       );
                     }
+
                     if (field.type === 'textarea' || field.type === 'array') {
                       return (
                         <div key={field.key} className="admin-modal-field admin-modal-field--full">
@@ -139,6 +201,7 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
                         </div>
                       );
                     }
+
                     if (field.type === 'boolean') {
                       return (
                         <div key={field.key} className="admin-modal-checkbox">
@@ -153,6 +216,7 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
                         </div>
                       );
                     }
+
                     return (
                       <div key={field.key} className="admin-modal-field">
                         <label>{field.label} {field.required && '*'}</label>
@@ -166,25 +230,27 @@ const AdminEditorModal = ({ title, isOpen, onClose, items = [], schema = [], onS
                   })}
                 </div>
 
-                <div className="admin-modal-footer-actions">
-                  {selectedItem._id && onDelete && (
-                    <button type="button" className="btn btn-outline admin-modal-delete-btn" onClick={async () => {
-                      if (window.confirm('Are you sure?')) {
-                        const userSession = await session();
-                        const token = userSession.getIdToken().getJwtToken();
-                        await onDelete(selectedItem._id, token);
-                        setSelectedItem(null);
-                      }
-                    }}>
-                      <FaTrash /> Delete
+                <form onSubmit={submitForm}>
+                  <div className="admin-modal-footer-actions">
+                    {selectedItem._id && onDelete && (
+                      <button type="button" className="btn btn-outline admin-modal-delete-btn" onClick={async () => {
+                        if (window.confirm('Are you sure?')) {
+                          const userSession = await session();
+                          const token = userSession.getIdToken().getJwtToken();
+                          await onDelete(selectedItem._id, token);
+                          setSelectedItem(null);
+                        }
+                      }}>
+                        <FaTrash /> Delete
+                      </button>
+                    )}
+                    <div className="admin-modal-footer-spacer" />
+                    <button type="button" className="btn btn-outline" onClick={() => setSelectedItem(null)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary" disabled={loading || isSubmitting}>
+                      {loading ? 'Saving...' : <><FaSave /> Save Changes</>}
                     </button>
-                  )}
-                  <div className="admin-modal-footer-spacer" />
-                  <button type="button" className="btn btn-outline" onClick={() => setSelectedItem(null)}>Cancel</button>
-                  <button type="button" className="btn btn-primary" onClick={submitForm} disabled={loading}>
-                    {loading ? 'Saving...' : <><FaSave /> Save Changes</>}
-                  </button>
-                </div>
+                  </div>
+                </form>
               </div>
             )}
           </div>

@@ -5,22 +5,45 @@ import './Location.css';
 
 const getEmbedUrl = (input) => {
   if (!input) return null;
+  const trimmed = input.trim();
 
-  const coordMatch = input.match(/@([-\d.]+),([-\d.]+)/);
-  const placeMatch = input.match(/\/maps\/place\/([^/@?]+)/);
+  // 1. If user pastes an iframe, extract the src
+  const iframeMatch = trimmed.match(/<iframe.*?src=["'](.*?)["']/);
+  if (iframeMatch) return iframeMatch[1];
 
-  if (placeMatch && coordMatch) {
+  // 2. Already an embed URL
+  if (trimmed.includes('maps/embed') || trimmed.includes('output=embed')) {
+    return trimmed;
+  }
+  
+  // 3. Extract precise CID (Place ID) from complex Google Maps URLs
+  // The !1s sequence holds perfectly isolated entity identities
+  const dataCidMatch = trimmed.match(/!1s(?:0x[0-9a-f]+:)?(0x[0-9a-f]+)/i);
+  if (dataCidMatch) {
+     try {
+       // Convert hexadecimal Google Place CID to strict Decimal format for the embed payload!
+       const cid = BigInt(dataCidMatch[1]).toString();
+       return `https://maps.google.com/maps?cid=${cid}&z=15&output=embed`;
+     } catch (e) {
+       console.error("CID conversion failed", e);
+     }
+  }
+
+  // 4. Extract Place Name from long Google Maps URLs
+  const placeMatch = trimmed.match(/\/maps\/(?:place|search|dir)\/([^/@?]+)/);
+  if (placeMatch) {
     const place = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
-    const lat = coordMatch[1];
-    const lng = coordMatch[2];
-    return `https://maps.google.com/maps?q=${encodeURIComponent(place)}&ll=${lat},${lng}&z=17&output=embed`;
+    return `https://maps.google.com/maps?q=${encodeURIComponent(place)}&z=15&output=embed`;
   }
 
-  if (coordMatch) {
-    return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=17&output=embed`;
+  // 5. Coordinates explicitly via @lat,lng in a long URL
+  const coordMatch = trimmed.match(/@([-\d.]+),([-\d.]+)/);
+  if (coordMatch && trimmed.startsWith('http')) {
+    return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=15&output=embed`;
   }
 
-  return null;
+  // 6. Final fallback: Shortlinks, custom Google links, or raw Address search texts
+  return `https://maps.google.com/maps?q=${encodeURIComponent(trimmed)}&z=15&output=embed`;
 };
 
 /* Address, hours, map embed */
@@ -65,34 +88,15 @@ const Location = () => {
           </div>
 
           <div className="location-map-frame">
-            {embedUrl ? (
-              <>
-                <iframe
-                  src={embedUrl}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  title="Gym Location Maps"
-                ></iframe>
-                <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                  <a href={mapLink} target="_blank" rel="noopener noreferrer"
-                    style={{ background: '#e53935', color: '#fff', padding: '10px 20px',
-                      textDecoration: 'none', display: 'inline-block', borderRadius: '8px' }}>
-                    Open in Google Maps
-                  </a>
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: '300px', backgroundColor: '#1a1a1a', borderRadius: '12px' }}>
-                <a href={mapLink} target="_blank" rel="noopener noreferrer"
-                  style={{ background: '#e53935', color: '#fff', padding: '12px 24px',
-                    textDecoration: 'none', borderRadius: '8px' }}>
-                  Open in Google Maps
-                </a>
-              </div>
-            )}
+            <iframe
+              src={embedUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen=""
+              loading="lazy"
+              title="Gym Location Maps"
+            ></iframe>
           </div>
         </div>
       </div>

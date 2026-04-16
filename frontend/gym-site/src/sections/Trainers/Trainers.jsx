@@ -4,12 +4,20 @@ import { useAuth } from '../../context/AuthContext';
 import AdminEditorModal from '../../components/AdminEditorModal/AdminEditorModal';
 import { trainerService } from '../../services/trainerService';
 import img1 from '../../assets/gym14.avif';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './Trainers.css';
 
+const resolveImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
+};
+
 const TrainerCard = ({ trainer }) => {
+  const resolvedSrc = resolveImageUrl(trainer.image);
   return (
     <div className="trainer-card">
-      <img className="trainer-photo" src={trainer.image || img1} alt={trainer.name} loading="lazy" />
+      <img className="trainer-photo" src={resolvedSrc || img1} alt={trainer.name} loading="lazy" />
       <div className="trainer-info-overlay">
         <h3>{trainer.name}</h3>
         <div className="trainer-role">{trainer.role}</div>

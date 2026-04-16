@@ -338,3 +338,43 @@
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
 }
+
+.tableResponsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+@media (max-width: 968px) {
+  .chartCardLarge, .chartCardSmall {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .adminPage {
+    padding: 80px 10px 40px;
+  }
+  .adminHeaderFlex h2 {
+    font-size: 1.5rem;
+  }
+  .adminContainer {
+    max-width: 100%;
+  }
+  .adminPanelSection {
+    padding: 15px;
+  }
+  .adminTabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .adminTab {
+    flex-shrink: 0;
+  }
+  .kpiCard {
+    padding: 15px;
+  }
+}

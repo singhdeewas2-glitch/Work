@@ -6,68 +6,92 @@ console.log("AWS KEY (AWS_ACCESS_KEY_ID):", process.env.AWS_ACCESS_KEY_ID ? `MAS
 console.log("AWS KEY (ACCESS_KEY):", process.env.ACCESS_KEY ? `MASKED (${process.env.ACCESS_KEY.substring(0, 4)}...)` : "undefined");
 console.log("AWS SECRET:", process.env.AWS_SECRET_ACCESS_KEY || process.env.SECRET_ACCESS_KEY ? "EXISTS" : "MISSING");
 console.log("AWS REGION:", process.env.AWS_REGION || process.env.REGION);
-
-import { S3Client, ListBucketsCommand } from "@aws-sdk/client-s3";
-const debugS3Client = new S3Client({
-  region: process.env.AWS_REGION || process.env.REGION,
-  credentials: {
-    // using the resolved configs to simulate actual connection
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.SECRET_ACCESS_KEY,
-  }
-});
-
-debugS3Client.send(new ListBucketsCommand({}))
-  .then((data) => {
-    console.log("S3 TEST SUCCESS: Successfully fetched bucket list.", data.Buckets?.map(b => b.Name));
-  })
-  .catch((err) => {
-    console.error("S3 TEST FAILED:");
-    console.error(err);
-  });
 console.log("---------------------------------------");
 
 import express from 'express';
 import cors from 'cors';
 import config from './config.mjs';
 import mongoose from 'mongoose';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import routes from './src/routes.mjs';
 import profileRoutes from './src/controller/profileController.mjs';
 import weightRoutes from './src/controller/weightController.mjs';
 import dietRoutes from './src/controller/dietController.mjs';
-
-const app = express();
-
-app.use(cors({ 
-  origin: true, 
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"], 
-  credentials: true 
-}));
-// Express 5+ does not allow '*' wildcards. Global OPTIONS requests are natively handled by app.use(cors()).
-app.use(express.json());
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: "Backend is alive on port 5000!" });
-});
-
-app.use('/api', routes);
-app.use('/api', profileRoutes);
-app.use('/api/weight', weightRoutes);
-app.use('/api/diet', dietRoutes);
-
 import adminRoutes from './src/controller/adminController.mjs';
-app.use('/api/admin', adminRoutes);
 
 import Trainer from './src/models/trainerModel.mjs';
 import Pricing from './src/models/pricingModel.mjs';
 import Transformation from './src/models/transformationModel.mjs';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: "Backend is alive!" });
+});
+
+// --- Upload Route with Disk Storage ---
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads');
+    import('fs').then(fs => {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Remove spaces and special characters from filename
+    const safeName = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+    cb(null, uniqueSuffix + '-' + safeName);
+  }
+});
+
+const uploadDisk = multer({ storage: diskStorage });
+
+app.post('/api/upload', uploadDisk.single('image'), (req, res) => {
+  console.log("=== /api/upload hit ===");
+  console.log("req.file:", req.file);
+
+  if (!req.file) {
+    return res.status(400).json({ error: "No file received" });
+  }
+
+  const fileUrl = `/uploads/${req.file.filename}`;
+  console.log("File uploaded successfully:", fileUrl);
+  res.json({ success: true, url: fileUrl, filename: req.file.filename });
+});
+
+// === MOUNT ALL ROUTES ===
+app.use('/api', routes);                  // Public routes
+app.use('/api/admin', adminRoutes);       // All admin CRUD routes
+app.use('/api/diet', dietRoutes);         // Diet routes
+app.use('/api/weight', weightRoutes);     // Weight tracking routes
+app.use('/api', profileRoutes);           // Profile routes
+
 mongoose.connect(config.mongoUri)
   .then(async () => {
     console.log('Connected to MongoDB successfully!');
-    
-    // Seed trainers if empty
+
     const tCount = await Trainer.countDocuments();
     if (tCount === 0) {
       await Trainer.insertMany([
@@ -78,7 +102,6 @@ mongoose.connect(config.mongoUri)
       console.log('Seeded Trainers');
     }
 
-    // Seed prices if empty
     const pCount = await Pricing.countDocuments();
     if (pCount === 0) {
       await Pricing.insertMany([
@@ -89,13 +112,11 @@ mongoose.connect(config.mongoUri)
       console.log('Seeded Pricing');
     }
 
-    // Seed transformations if empty
     const trCount = await Transformation.countDocuments();
     if (trCount === 0) {
       await Transformation.insertMany([
-        { name: 'Manish Paul', story: 'Lost 12kg in 3 months and built lean muscle!', beforeImage: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&q=80&w=300', afterImage: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&q=80&w=300' },
-        { name: 'Prashant Singh', story: 'Huge muscle gain transformation. Completely transformed my energy levels.', beforeImage: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=300', afterImage: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=300' },
-        { name: 'Ankit Verma', story: 'Huge muscle gain transformation in just 6 months of heavy lifting.', beforeImage: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&q=80&w=300', afterImage: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=300' }
+        { name: 'Manish Paul', story: 'Lost 12kg in 3 months!', beforeImage: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&q=80&w=300', afterImage: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&q=80&w=300' },
+        { name: 'Prashant Singh', story: 'Huge muscle gain transformation.', beforeImage: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=300', afterImage: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=300' },
       ]);
       console.log('Seeded Transformations');
     }
@@ -115,7 +136,6 @@ const cognitoClient = new CognitoIdentityProviderClient({
 app.listen(config.port, async () => {
   console.log(`Backend server running on port ${config.port}`);
   console.log('Authentication configs reloaded successfully.');
-
   try {
     const command = new AdminConfirmSignUpCommand({
       UserPoolId: config.userPoolId,

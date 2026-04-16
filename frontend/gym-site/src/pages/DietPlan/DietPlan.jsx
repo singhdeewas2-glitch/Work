@@ -2,18 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Carousel from '../../components/Carousel/Carousel';
 import { dietService } from '../../services/dietService';
-import { uploadFileToServer } from '../../services/uploadService';
+import { API_BASE_URL } from '../../config/apiConfig';
+
+const resolveImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_BASE_URL}${url}`;
+};
 
 const DietPlan = () => {
   const { session, dbUser, user } = useAuth();
   const [diets, setDiets] = useState({ Breakfast: [], Lunch: [], Snacks: [], Dinner: [] });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  
-  // Admin Form State
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ id: null, mealType: 'Breakfast', items: '', calories: '', notes: '', image: '' });
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const groups = user?.signInUserSession?.accessToken?.payload?.["cognito:groups"];
   console.log("DietPlan groups:", groups);
@@ -32,8 +37,6 @@ const DietPlan = () => {
     try {
       setLoading(true);
       const token = await getValidToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
       const response = await dietService.getDiets(token);
       if (response.ok) {
         const data = await response.json();
@@ -44,7 +47,7 @@ const DietPlan = () => {
         setDiets(grouped);
       }
     } catch (err) {
-      // Diets fetch error - handled by UI state
+      // handled by UI state
     } finally {
       setLoading(false);
     }
@@ -58,31 +61,15 @@ const DietPlan = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleImageFile = async (e) => {
+  const handleImageFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-
-    try {
-      setUploadingImage(true);
-      const token = await getValidToken();
-      
-      // Use the proper upload service instead of manual fetch
-      const uploadData = await uploadFileToServer(file, 'diets', token);
-      
-      setFormData(prev => ({ ...prev, image: uploadData.url }));
-    } catch (err) {
-      // Image upload error - handled by UI state
-      setMessage('Failed to upload image.');
-    } finally {
-      setUploadingImage(false);
-    }
+    setFormData(prev => ({ ...prev, image: file }));
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (uploadingImage) return;
-
     try {
       const token = await getValidToken();
       if (!token) return;
@@ -98,12 +85,12 @@ const DietPlan = () => {
       }
 
       if (!response.ok) throw new Error('Failed to save diet plan');
-      
+
       setMessage('Diet plan saved successfully.');
       setIsEditing(false);
       setFormData({ id: null, mealType: 'Breakfast', items: '', calories: '', notes: '', image: '' });
+      setImagePreview(null);
       fetchDiets();
-      
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setMessage('Error saving diet plan.');
@@ -119,6 +106,7 @@ const DietPlan = () => {
       notes: diet.notes || '',
       image: diet.image || ''
     });
+    setImagePreview(resolveImageUrl(diet.image));
     setIsEditing(true);
   };
 
@@ -127,9 +115,7 @@ const DietPlan = () => {
     try {
       const token = await getValidToken();
       if (!token) return;
-
       const response = await dietService.deleteDiet(id, token);
-
       if (response.ok) {
         setMessage('Diet plan deleted.');
         fetchDiets();
@@ -142,6 +128,7 @@ const DietPlan = () => {
 
   const cancelEdit = () => {
     setIsEditing(false);
+    setImagePreview(null);
     setFormData({ id: null, mealType: 'Breakfast', items: '', calories: '', notes: '', image: '' });
   };
 
@@ -159,7 +146,7 @@ const DietPlan = () => {
 
         {isAdmin && !isEditing && (
           <div className="adminActions">
-            <button className={`btn btn-primary`} onClick={() => setIsEditing(true)}>
+            <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
               <span style={{ marginRight: '8px' }}>+</span> Add Diet Plan
             </button>
           </div>
@@ -194,15 +181,16 @@ const DietPlan = () => {
               </div>
               <div className="diet-form-field">
                 <label>Meal Image (Optional)</label>
-                <input type="file" accept="image/*" onChange={handleImageFile} disabled={uploadingImage} />
-                {uploadingImage && <small style={{color: 'var(--accent-red)'}}>Uploading image...</small>}
-                {formData.image && !uploadingImage && <img src={formData.image} alt="Preview" style={{marginTop: '10px', height: '60px', borderRadius: '8px', objectFit: 'cover'}} />}
+                <input type="file" accept="image/*" onChange={handleImageFile} />
+                {imagePreview && (
+                  <img src={imagePreview} alt="Preview" style={{ marginTop: '10px', height: '60px', borderRadius: '8px', objectFit: 'cover' }} />
+                )}
               </div>
             </div>
-            
+
             <div className="diet-form-actions">
-              <button type="button" className={`btn btn-outline`} onClick={cancelEdit}>Cancel</button>
-              <button type="submit" className={`btn btn-primary`} disabled={uploadingImage}>Save</button>
+              <button type="button" className="btn btn-outline" onClick={cancelEdit}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Save</button>
             </div>
           </form>
         )}
@@ -221,7 +209,12 @@ const DietPlan = () => {
                       <div className="dietCard">
                         {diet.image && (
                           <div className="dietImageWrapper">
-                            <img src={diet.image} alt="Meal" className="dietImage" />
+                            <img
+                              src={resolveImageUrl(diet.image)}
+                              alt="Meal"
+                              className="dietImage"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
                           </div>
                         )}
                         <div className="dietInfo">
@@ -231,11 +224,10 @@ const DietPlan = () => {
                             {diet.notes ? <span className="metaBadge notes">Note: {diet.notes}</span> : null}
                           </div>
                         </div>
-                        
                         {isAdmin && (
                           <div className="adminControls">
-                            <button className={`btn btn-outline`} onClick={() => handleEdit(diet)}>Edit</button>
-                            <button className={`btn btn-outline`} style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }} onClick={() => handleDelete(diet._id)}>Delete</button>
+                            <button className="btn btn-outline" onClick={() => handleEdit(diet)}>Edit</button>
+                            <button className="btn btn-outline" style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' }} onClick={() => handleDelete(diet._id)}>Delete</button>
                           </div>
                         )}
                       </div>

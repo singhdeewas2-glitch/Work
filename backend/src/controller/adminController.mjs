@@ -4,15 +4,58 @@ import User from '../models/userModel.mjs';
 import Trainer from '../models/trainerModel.mjs';
 import Content from '../models/contentModel.mjs';
 import Transformation from '../models/transformationModel.mjs';
+import Pricing from '../models/pricingModel.mjs';
 import multer from 'multer';
-import { uploadBufferToS3 } from '../utils/s3Upload.mjs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const upload = multer({ storage: multer.memoryStorage() });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Disk storage — saves files to /uploads folder, served as static files
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    import('fs').then(fs => {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Remove spaces and special characters from filename
+    const safeName = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+    cb(null, uniqueSuffix + '-' + safeName);
+  }
+});
+
+const upload = multer({ storage: diskStorage });
 
 const router = express.Router();
 
-const uploadImage = upload.single('image');
+// --- General Upload ---
+router.post('/upload', requireAdmin, upload.single('image'), async (req, res) => {
+  try {
+    console.log("FORENSIC TRACE: /api/admin/upload hit");
+    console.log('FILE:', req.file);
+    console.log('BODY:', req.body);
 
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file received' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    console.log("File saved to disk:", fileUrl);
+    res.json({ success: true, url: fileUrl });
+  } catch (err) {
+    console.error("Upload Error:", err);
+    res.status(500).json({ error: 'Upload failed: ' + err.message });
+  }
+});
+
+// --- Members ---
 router.get('/members', requireAdmin, async (req, res) => {
   try {
     const users = await User.find({}).sort({ createdAt: -1 });
@@ -22,39 +65,7 @@ router.get('/members', requireAdmin, async (req, res) => {
   }
 });
 
-// --- General Upload Service ---
-router.post('/upload', requireAdmin, (req, res, next) => {
-  uploadImage(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({ error: `Upload error: ${err.message}` });
-    } else if (err) {
-      return res.status(500).json({ error: 'Unknown upload error' });
-    }
-    next();
-  });
-}, async (req, res) => {
-  try {
-    console.log("FORENSIC TRACE: /api/admin/upload hit")
-    console.log('HEADERS:', req.headers['content-type']);
-    console.log('FILE:', req.file);
-    console.log('BODY:', req.body);
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file received' });
-    }
-    
-    console.log("Uploading file:", req.file.originalname);
-    const folder = req.body.folder || 'misc';
-    const imageUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, folder);
-    res.json({ url: imageUrl });
-  } catch (err) {
-    console.error("S3 Upload Error:", err);
-    res.status(500).json({ error: 'S3 upload failed: ' + err.message, stack: err.stack });
-  }
-});
-
 // --- Users Management ---
-
 router.get('/users', requireAdmin, async (req, res) => {
   try {
     const users = await User.find({}).sort({ createdAt: -1 });
@@ -88,7 +99,6 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 });
 
 // --- Trainers Management ---
-
 router.get('/trainers', requireAdmin, async (req, res) => {
   try {
     const trainers = await Trainer.find({});
@@ -98,37 +108,50 @@ router.get('/trainers', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/trainers', requireAdmin, async (req, res) => {
+router.post('/trainers', requireAdmin, upload.single('image'), async (req, res) => {
   try {
-    console.log("Saving:", req.body);
-    const { name, role, experience, image } = req.body;
+    console.log("=== POST /trainers ===");
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
 
-    if (!name || !role || !image) {
-        return res.status(400).json({ error: 'Name, role, and trainer image are required' });
+    const { name, role, experience, image } = req.body;
+    let imageUrl = image;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+      console.log("Image saved to disk:", imageUrl);
     }
 
-    const newTrainer = new Trainer({ name, role, experience, image });
+    if (!name || !role || !imageUrl) {
+      return res.status(400).json({ error: 'Name, role, and trainer image are required' });
+    }
+
+    const newTrainer = new Trainer({ name, role, experience, image: imageUrl });
     await newTrainer.save();
-    res.json(newTrainer);
+    console.log("Trainer created:", newTrainer);
+    res.json({ success: true, data: newTrainer });
   } catch (err) {
     console.error("POST /trainers failed", err);
-    res.status(500).json({ error: 'Failed to create trainer' });
+    res.status(500).json({ error: 'Failed to create trainer: ' + err.message });
   }
 });
 
-router.put('/trainers/:id', requireAdmin, async (req, res) => {
+router.put('/trainers/:id', requireAdmin, upload.single('image'), async (req, res) => {
   try {
-    console.log("Saving:", req.body);
+    console.log("=== PUT /trainers ===");
     const { name, role, experience, image } = req.body;
+    let imageUrl = image;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
 
     const updatePayload = { name, role, experience };
-    if (image) updatePayload.image = image;
+    if (imageUrl) updatePayload.image = imageUrl;
 
     const updated = await Trainer.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
-    res.json(updated);
+    res.json({ success: true, data: updated });
   } catch (err) {
     console.error("PUT /trainers failed", err);
-    res.status(500).json({ error: 'Failed to update trainer' });
+    res.status(500).json({ error: 'Failed to update trainer: ' + err.message });
   }
 });
 
@@ -142,9 +165,6 @@ router.delete('/trainers/:id', requireAdmin, async (req, res) => {
 });
 
 // --- Pricing Management ---
-
-import Pricing from '../models/pricingModel.mjs';
-
 router.get('/prices', requireAdmin, async (req, res) => {
   try {
     const prices = await Pricing.find({});
@@ -156,20 +176,61 @@ router.get('/prices', requireAdmin, async (req, res) => {
 
 router.post('/prices', requireAdmin, async (req, res) => {
   try {
-    const newPrice = new Pricing(req.body);
+    console.log("=== POST /prices ===");
+    console.log("req.body:", req.body);
+
+    const { title, price, duration, features, isPopular } = req.body;
+
+    if (!title || !price) {
+      return res.status(400).json({ error: 'Title and price are required' });
+    }
+
+    let processedFeatures = features;
+    if (typeof features === 'string') {
+      processedFeatures = features.split(',').map(f => f.trim()).filter(f => f);
+    }
+
+    const newPrice = new Pricing({
+      title,
+      price,
+      duration: duration || '/month',
+      features: processedFeatures,
+      isPopular: isPopular || false
+    });
+
     await newPrice.save();
-    res.json(newPrice);
+    console.log("Pricing plan created:", newPrice);
+    res.json({ success: true, data: newPrice });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create pricing' });
+    console.error("POST /prices failed", err);
+    res.status(500).json({ error: 'Failed to create pricing: ' + err.message });
   }
 });
 
 router.put('/prices/:id', requireAdmin, async (req, res) => {
   try {
-    const updated = await Pricing.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    const { title, price, duration, features, isPopular } = req.body;
+
+    if (!title || !price) {
+      return res.status(400).json({ error: 'Title and price are required' });
+    }
+
+    let processedFeatures = features;
+    if (typeof features === 'string') {
+      processedFeatures = features.split(',').map(f => f.trim()).filter(f => f);
+    }
+
+    const updated = await Pricing.findByIdAndUpdate(req.params.id, {
+      title, price,
+      duration: duration || '/month',
+      features: processedFeatures,
+      isPopular: isPopular || false
+    }, { new: true });
+
+    res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update pricing' });
+    console.error("PUT /prices failed", err);
+    res.status(500).json({ error: 'Failed to update pricing: ' + err.message });
   }
 });
 
@@ -182,9 +243,7 @@ router.delete('/prices/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// --- Content Management ---
-
-
+// --- Content / Config ---
 router.get('/config', requireAdmin, async (req, res) => {
   try {
     const content = await Content.findOne({});
@@ -196,7 +255,19 @@ router.get('/config', requireAdmin, async (req, res) => {
 
 router.put('/config', requireAdmin, async (req, res) => {
   try {
-    const { whatsapp, phone, email, address, mapsLink } = req.body;
+    let { whatsapp, phone, email, address, mapsLink } = req.body;
+    
+    // Natively normalize shortlinks on save so it doesn't throttle the backend during standard public page loads!
+    if (mapsLink && (mapsLink.includes('maps.app.goo.gl') || mapsLink.includes('goo.gl/maps'))) {
+       try {
+         const fetchMod = (await import('node-fetch')).default || global.fetch;
+         const response = await fetchMod(mapsLink, { redirect: 'follow' });
+         mapsLink = response.url; // Replace with the heavy, un-obfuscated maps string
+       } catch (err) {
+         console.error('Failed to unpack Maps URL', err);
+       }
+    }
+
     let content = await Content.findOne({});
     if (!content) {
       content = new Content({ whatsapp, phone, email, address, mapsLink });
@@ -216,7 +287,6 @@ router.put('/config', requireAdmin, async (req, res) => {
 });
 
 // --- Transformations Management ---
-
 router.get('/transformations', requireAdmin, async (req, res) => {
   try {
     const transformations = await Transformation.find({}).sort({ createdAt: -1 });
@@ -224,54 +294,86 @@ router.get('/transformations', requireAdmin, async (req, res) => {
       const start = new Date(t.createdAt);
       const end = new Date(t.updatedAt || t.createdAt);
       const durationDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
-      const progress = t.afterImage ? 100 : 0;
       return {
         ...t.toObject(),
-        progress,
+        progress: t.afterImage ? 100 : 0,
         duration: `${durationDays} days`
       };
     });
     res.json(hydrated);
-
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch transformations' });
   }
 });
 
-router.post('/transformations', requireAdmin, async (req, res) => {
-  try {
-    console.log("Saving:", req.body);
-    const { name, story, beforeImage, afterImage } = req.body;
+router.post('/transformations', requireAdmin,
+  upload.fields([{ name: 'beforeImage', maxCount: 1 }, { name: 'afterImage', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      console.log("=== POST /transformations ===");
+      console.log("req.body:", req.body);
+      console.log("req.files:", req.files);
 
-    if (!beforeImage || !name || !story) {
+      const { name, story, beforeImage, afterImage } = req.body;
+
+      let beforeImageUrl = beforeImage;
+      let afterImageUrl = afterImage;
+
+      if (req.files?.beforeImage?.[0]) {
+        beforeImageUrl = `/uploads/${req.files.beforeImage[0].filename}`;
+        console.log("Before image saved:", beforeImageUrl);
+      }
+
+      if (req.files?.afterImage?.[0]) {
+        afterImageUrl = `/uploads/${req.files.afterImage[0].filename}`;
+        console.log("After image saved:", afterImageUrl);
+      }
+
+      if (!beforeImageUrl || !name || !story) {
         return res.status(400).json({ error: 'Missing required fields (name, story, or beforeImage)' });
+      }
+
+      const newTrans = new Transformation({ name, story, beforeImage: beforeImageUrl, afterImage: afterImageUrl });
+      await newTrans.save();
+      console.log("Transformation created:", newTrans);
+      res.json({ success: true, data: newTrans });
+    } catch (err) {
+      console.error("POST /transformations failed", err);
+      res.status(500).json({ error: 'Failed to create transformation: ' + err.message });
     }
-
-    const newTrans = new Transformation({ name, story, beforeImage, afterImage });
-    await newTrans.save();
-    res.json(newTrans);
-  } catch (err) {
-    console.error("POST /transformations failed", err);
-    res.status(500).json({ error: 'Failed to create transformation' });
   }
-});
+);
 
-router.put('/transformations/:id', requireAdmin, async (req, res) => {
-  try {
-    console.log("Saving:", req.body);
-    const { name, story, beforeImage, afterImage } = req.body;
+router.put('/transformations/:id', requireAdmin,
+  upload.fields([{ name: 'beforeImage', maxCount: 1 }, { name: 'afterImage', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      console.log("=== PUT /transformations ===");
+      const { name, story, beforeImage, afterImage } = req.body;
 
-    const updatePlayload = { name, story };
-    if (beforeImage) updatePlayload.beforeImage = beforeImage;
-    if (afterImage) updatePlayload.afterImage = afterImage;
+      let beforeImageUrl = beforeImage;
+      let afterImageUrl = afterImage;
 
-    const updated = await Transformation.findByIdAndUpdate(req.params.id, updatePlayload, { new: true });
-    res.json(updated);
-  } catch (err) {
-    console.error("PUT /transformations failed", err);
-    res.status(500).json({ error: 'Failed to update transformation' });
+      if (req.files?.beforeImage?.[0]) {
+        beforeImageUrl = `/uploads/${req.files.beforeImage[0].filename}`;
+      }
+
+      if (req.files?.afterImage?.[0]) {
+        afterImageUrl = `/uploads/${req.files.afterImage[0].filename}`;
+      }
+
+      const updatePayload = { name, story };
+      if (beforeImageUrl) updatePayload.beforeImage = beforeImageUrl;
+      if (afterImageUrl) updatePayload.afterImage = afterImageUrl;
+
+      const updated = await Transformation.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      console.error("PUT /transformations failed", err);
+      res.status(500).json({ error: 'Failed to update transformation: ' + err.message });
+    }
   }
-});
+);
 
 router.delete('/transformations/:id', requireAdmin, async (req, res) => {
   try {
