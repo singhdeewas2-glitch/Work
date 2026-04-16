@@ -11,23 +11,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // === CENTRALIZED MULTER CONFIGURATION ===
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    import('fs').then(fs => {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
+const memoryStorage = multer.memoryStorage();
 
-const upload = multer({ storage: diskStorage });
+const upload = multer({ storage: memoryStorage });
 const uploadImage = upload.single('image');
 
 // === TRAINER CRUD ROUTES ===

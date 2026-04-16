@@ -4,30 +4,15 @@ import { requireAuth, requireAdmin } from '../middleware/authMiddleware.mjs';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { uploadBufferToS3 } from '../utils/s3Upload.mjs';
 
 const router = express.Router();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Disk storage for local uploads
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    import('fs').then(fs => {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
-
-const upload = multer({ storage: diskStorage });
+const memoryStorage = multer.memoryStorage();
+const upload = multer({ storage: memoryStorage });
 const uploadImage = upload.single('image');
 
 // GET all diet plans (protected so only logged in users can see)
@@ -62,8 +47,8 @@ router.post('/', requireAdmin, (req, res, next) => {
     // Handle image: use uploaded file if exists, otherwise use URL from form
     let imageUrl = image || '';
     if (req.file) {
-      console.log("Uploading diet image to local storage...");
-      imageUrl = `/uploads/${req.file.filename}`;
+      console.log("Uploading diet image to S3...");
+      imageUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'diets');
       console.log("Diet image uploaded to:", imageUrl);
     }
     
@@ -110,8 +95,8 @@ router.put('/:id', requireAdmin, (req, res, next) => {
     // Handle image: use uploaded file if exists, otherwise use URL from form
     let imageUrl = image;
     if (req.file) {
-      console.log("Uploading diet image to local storage...");
-      imageUrl = `/uploads/${req.file.filename}`;
+      console.log("Uploading diet image to S3...");
+      imageUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'diets');
       console.log("Diet image uploaded to:", imageUrl);
     }
     

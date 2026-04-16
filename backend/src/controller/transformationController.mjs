@@ -11,22 +11,9 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// storage
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, unique + '-' + file.originalname);
-  }
-});
+const memoryStorage = multer.memoryStorage();
 
-const upload = multer({ storage: diskStorage });
+const upload = multer({ storage: memoryStorage });
 
 /* ================= GET ================= */
 router.get('/', async (req, res) => {

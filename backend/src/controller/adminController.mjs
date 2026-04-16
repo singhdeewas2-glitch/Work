@@ -8,30 +8,13 @@ import Pricing from '../models/pricingModel.mjs';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { uploadBufferToS3 } from '../utils/s3Upload.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Disk storage — saves files to /uploads folder, served as static files
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    import('fs').then(fs => {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    // Remove spaces and special characters from filename
-    const safeName = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-    cb(null, uniqueSuffix + '-' + safeName);
-  }
-});
-
-const upload = multer({ storage: diskStorage });
+const memoryStorage = multer.memoryStorage();
+const upload = multer({ storage: memoryStorage });
 
 const router = express.Router();
 
@@ -46,8 +29,8 @@ router.post('/upload', requireAdmin, upload.single('image'), async (req, res) =>
       return res.status(400).json({ error: 'No file received' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    console.log("File saved to disk:", fileUrl);
+    const fileUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'admin-uploads');
+    console.log("File saved to S3:", fileUrl);
     res.json({ success: true, url: fileUrl });
   } catch (err) {
     console.error("Upload Error:", err);
@@ -117,8 +100,8 @@ router.post('/trainers', requireAdmin, upload.single('image'), async (req, res) 
     const { name, role, experience, image } = req.body;
     let imageUrl = image;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
-      console.log("Image saved to disk:", imageUrl);
+      imageUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'trainers');
+      console.log("Image saved to S3:", imageUrl);
     }
 
     if (!name || !role || !imageUrl) {
@@ -141,7 +124,7 @@ router.put('/trainers/:id', requireAdmin, upload.single('image'), async (req, re
     const { name, role, experience, image } = req.body;
     let imageUrl = image;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      imageUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'trainers');
     }
 
     const updatePayload = { name, role, experience };
@@ -320,12 +303,12 @@ router.post('/transformations', requireAdmin,
       let afterImageUrl = afterImage;
 
       if (req.files?.beforeImage?.[0]) {
-        beforeImageUrl = `/uploads/${req.files.beforeImage[0].filename}`;
+        beforeImageUrl = await uploadBufferToS3(req.files.beforeImage[0].buffer, req.files.beforeImage[0].originalname, req.files.beforeImage[0].mimetype, 'transformations');
         console.log("Before image saved:", beforeImageUrl);
       }
 
       if (req.files?.afterImage?.[0]) {
-        afterImageUrl = `/uploads/${req.files.afterImage[0].filename}`;
+        afterImageUrl = await uploadBufferToS3(req.files.afterImage[0].buffer, req.files.afterImage[0].originalname, req.files.afterImage[0].mimetype, 'transformations');
         console.log("After image saved:", afterImageUrl);
       }
 
@@ -355,11 +338,11 @@ router.put('/transformations/:id', requireAdmin,
       let afterImageUrl = afterImage;
 
       if (req.files?.beforeImage?.[0]) {
-        beforeImageUrl = `/uploads/${req.files.beforeImage[0].filename}`;
+        beforeImageUrl = await uploadBufferToS3(req.files.beforeImage[0].buffer, req.files.beforeImage[0].originalname, req.files.beforeImage[0].mimetype, 'transformations');
       }
 
       if (req.files?.afterImage?.[0]) {
-        afterImageUrl = `/uploads/${req.files.afterImage[0].filename}`;
+        afterImageUrl = await uploadBufferToS3(req.files.afterImage[0].buffer, req.files.afterImage[0].originalname, req.files.afterImage[0].mimetype, 'transformations');
       }
 
       const updatePayload = { name, story };

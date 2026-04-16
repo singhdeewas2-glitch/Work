@@ -21,6 +21,7 @@ import profileRoutes from './src/controller/profileController.mjs';
 import weightRoutes from './src/controller/weightController.mjs';
 import dietRoutes from './src/controller/dietController.mjs';
 import adminRoutes from './src/controller/adminController.mjs';
+import { uploadBufferToS3 } from './src/utils/s3Upload.mjs';
 
 import Trainer from './src/models/trainerModel.mjs';
 import Pricing from './src/models/pricingModel.mjs';
@@ -48,27 +49,11 @@ app.get('/api/test', (req, res) => {
 });
 
 // --- Upload Route with Disk Storage ---
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads');
-    import('fs').then(fs => {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    // Remove spaces and special characters from filename
-    const safeName = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-    cb(null, uniqueSuffix + '-' + safeName);
-  }
-});
+const memoryStorage = multer.memoryStorage();
 
-const uploadDisk = multer({ storage: diskStorage });
+const uploadDisk = multer({ storage: memoryStorage });
 
-app.post('/api/upload', uploadDisk.single('image'), (req, res) => {
+app.post('/api/upload', uploadDisk.single('image'), async (req, res) => {
   console.log("=== /api/upload hit ===");
   console.log("req.file:", req.file);
 
@@ -76,9 +61,14 @@ app.post('/api/upload', uploadDisk.single('image'), (req, res) => {
     return res.status(400).json({ error: "No file received" });
   }
 
-  const fileUrl = `/uploads/${req.file.filename}`;
-  console.log("File uploaded successfully:", fileUrl);
-  res.json({ success: true, url: fileUrl, filename: req.file.filename });
+  try {
+    const fileUrl = await uploadBufferToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'global-uploads');
+    console.log("File uploaded successfully to S3:", fileUrl);
+    res.json({ success: true, url: fileUrl, filename: req.file.originalname });
+  } catch (error) {
+    console.error("Failed to upload to S3:", error);
+    res.status(500).json({ error: 'Failed to upload to S3: ' + error.message });
+  }
 });
 
 // === MOUNT ALL ROUTES ===
