@@ -184,7 +184,7 @@ export const AuthProvider = ({ children }) => {
   // Provide authentication context to child components
   return (
     <AuthContext.Provider value={{ user, dbUser, loading, session: getSession, signup, login, logout, forgotPassword, confirmPassword }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
